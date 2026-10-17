@@ -30,6 +30,10 @@ spring:
       acks: all
       properties:
         enable.idempotence: true
+        # A send waiting on metadata from an unreachable broker gives up with
+        # the relay's own send timeout (booking.kafka.send-timeout-seconds)
+        # instead of the client default of 60 s, so one pass stays bounded.
+        max.block.ms: 10000
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
     consumer:

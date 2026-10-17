@@ -16,17 +16,16 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
-import org.springframework.scheduling.annotation.EnableScheduling
 
 /**
  * The worker workload: relay, sweeps and the gate consumer.
  *
  * Profile-gated so the same image serves both deployments — `api` pods do not run
  * the relay, and worker pods do not serve HTTP (architecture-design.md section 3).
+ * Scheduling itself is enabled, with a thread per job, in [WorkerScheduling].
  */
 @Configuration
 @Profile("worker")
-@EnableScheduling
 class WorkerConfig {
 
     @Bean

@@ -65,7 +65,7 @@ squashed into this repository's first commit; they do not resolve here.
 |---|---|---|---|---|---|
 | 1 | 4199e31 | Sonnet | 3 | 57/57 | all three ran inline (economy) on the 260-line fixture |
 | 2 | 07de729 | Sonnet | 3 | 41/42 | check 13 N/A in every rep (all inline); one rep read an untouched file (check 1) |
-| 3 | — | — | — | not run in this repository | |
+| 3 | 72be6d1 | Sonnet | 3 | 24/24 | every rep ran the skill's script; at the older History row the page shows that review's own changes, not the latest open list |
 | 4 | 4199e31 | Sonnet | 3 | 24/24 | the suite cannot run on the host; Q4 lands as an unrun-mutation candidate, as checks 3–4 allow |
 | 5 | f34e692 | Sonnet | 3 | 3/3 | only `reviewing-code-by-aspect` loaded |
 

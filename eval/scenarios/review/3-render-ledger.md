@@ -2,7 +2,9 @@
 
 Fixture and answer key: [`fixture.md`](fixture.md).
 
-**Setup:** a temp git repo containing only `docs/review/review.md` — a
+**Setup** (built by
+[`build_s3_fixture.py`](../../fixtures/reviewing-code-by-aspect/build_s3_fixture.py) into `base-s3/`): a temp git
+repo containing only `docs/review/review.md` — a
 hand-authored ledger for a fictional billing service, built from
 `template/review.md` in the template's own form (`---` rules,
 `### <Aspect> (<ABBR>) — <score>/10 · <n> open` headers, summary rows in

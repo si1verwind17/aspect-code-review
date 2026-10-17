@@ -7,16 +7,15 @@ history. Finding IDs are stable and never reused. Keep the section names and
 order of this template — incremental reviews and future maintainers navigate
 by them.
 
-## Summary — 2026-10-17 @ 4bdacf6 (incremental review, 11 aspects, scope: diff since dc188b7)
+## Summary — 2026-10-17 @ 862df06 (incremental review, 11 aspects, scope: diff since 4bdacf6)
 
 **Worst aspect: Requirements alignment (REQ) at 0/10.** Open criticals:
-- CON-001 C: an availability edit racing a create stores a booking inside blocked time and leaves it off the R20 conflict list.
 - REQ-001 C: a provider can cancel without the reason R7 requires.
 - REQ-002 C: no metric or alert exists for undispatched events (NF11).
 - REQ-003 C: BookingCompleted does not say whether the system or the provider completed it (UC12).
 - REQ-004 C: there is no erasure, export or retention (NF5).
 
-This review covered one fix commit, which gives each worker job its own scheduler thread and bounds `max.block.ms`. One finding was resolved: ERR-001 C. A relay pass blocked on the broker no longer holds back the hold-expiry or auto-complete sweep. Error handling moves from 3 to 4: its worst open findings are now two majors, one of them widespread. LOG-012's window shrank to the sweep interval. Three minors were found: RDB-007, RDB-008 and TSQ-015. Two clean-context reviewers covered the diff.
+This review covered one fix commit. Availability edits now lock the resource row FOR UPDATE, and create and reschedule hold it FOR SHARE before they check availability. One finding was resolved: CON-001 C. The concurrency reviewer checked both race orders under READ COMMITTED and every lock site, and found no new deadlock edge. Concurrency safety moves from 3 to 4, with no critical left. Only create against a BLOCK is pinned by a test. Deleting the reschedule lock or the end-rule lock leaves the suite green, so both are filed as TSQ-016 M; each mutation was run. Three minors were found: TSQ-017, RDB-009 and REQ-019. Two clean-context reviewers covered the diff.
 
 | Aspect | Score | Worst open | Open findings |
 |---|---|---|---|
@@ -24,23 +23,23 @@ This review covered one fix commit, which gives each worker job its own schedule
 | Error handling (ERR) | **4** | major | ERR-002 M (w), ERR-003 M, ERR-004 m, ERR-005 m, ERR-006 m, ERR-007 m (w), ERR-008 m |
 | Security (SEC) | **4** | major | SEC-003 M (w), SEC-004 M (w), SEC-005 M, SEC-006 m, SEC-007 m, SEC-008 m, SEC-009 m |
 | Code pattern (PAT) | **6** | major | PAT-001 M, PAT-002 m, PAT-004 m, PAT-005 m (w), PAT-006 m |
-| Concurrency safety (CON) | **3** | critical | CON-001 C, CON-002 M, CON-003 M, CON-004 M, CON-005 M (w), CON-006 M, CON-007 m |
+| Concurrency safety (CON) | **4** | major | CON-002 M, CON-003 M, CON-004 M, CON-005 M (w), CON-006 M, CON-007 m |
 | Contract & compatibility (CMP) | **5** | major | CMP-001 M, CMP-002 M, CMP-003 m (w), CMP-004 m |
 | Logging (LGG) | **9** | minor | LGG-001 m, LGG-002 m (w), LGG-003 m, LGG-004 m, LGG-005 m, LGG-006 m |
-| Test quality (TSQ) | **4** | major | TSQ-001 M, TSQ-003 M, TSQ-004 M, TSQ-005 M, TSQ-006 M, TSQ-007 M, TSQ-008 M, TSQ-009 M, TSQ-010 m, TSQ-011 m, TSQ-012 m, TSQ-013 m, TSQ-014 m, TSQ-015 m |
+| Test quality (TSQ) | **4** | major | TSQ-001 M, TSQ-003 M, TSQ-004 M, TSQ-005 M, TSQ-006 M, TSQ-007 M, TSQ-008 M, TSQ-009 M, TSQ-010 m, TSQ-011 m, TSQ-012 m, TSQ-013 m, TSQ-014 m, TSQ-015 m, TSQ-016 M, TSQ-017 m |
 | Type & null safety (TYP) | **9** | minor | TYP-001 m, TYP-002 m (w) |
-| Readability & maintainability (RDB) | **9** | minor | RDB-001 m, RDB-002 m, RDB-003 m, RDB-004 m, RDB-005 m, RDB-006 m, RDB-007 m, RDB-008 m |
-| Requirements alignment (REQ) | **0** | critical | REQ-001 C, REQ-002 C (w), REQ-003 C, REQ-004 C, REQ-005 M, REQ-006 M, REQ-007 M, REQ-008 M, REQ-009 M, REQ-010 M, REQ-011 M, REQ-012 m (w), REQ-013 m, REQ-014 m, REQ-015 m, REQ-016 m, REQ-017 m, REQ-018 m |
+| Readability & maintainability (RDB) | **9** | minor | RDB-001 m, RDB-002 m, RDB-003 m, RDB-004 m, RDB-005 m, RDB-006 m, RDB-007 m, RDB-008 m, RDB-009 m |
+| Requirements alignment (REQ) | **0** | critical | REQ-001 C, REQ-002 C (w), REQ-003 C, REQ-004 C, REQ-005 M, REQ-006 M, REQ-007 M, REQ-008 M, REQ-009 M, REQ-010 M, REQ-011 M, REQ-012 m (w), REQ-013 m, REQ-014 m, REQ-015 m, REQ-016 m, REQ-017 m, REQ-018 m, REQ-019 m |
 
 Rows stay in catalog order (the History table's column order), never sorted
 by score — so any two reviews line up row-for-row. The worst aspects are
 named in the prose above, not by reordering the table.
 
-Average (trend only, never the headline): **5.2**.
+Average (trend only, never the headline): **5.3**.
 
 ## Review scope
 
-Incremental review at 4bdacf6 (clean tree): the diff since dc188b7 for all 11 aspects. Four files were touched: the new `worker/WorkerScheduling.kt`, `worker/WorkerConfig.kt`, `src/main/resources/application.yaml` and the new `worker/WorkerSchedulingTest.kt`. The first review's hash, 4781c64, is the service's own repository; its tree is the one this repository holds at c51e603. Later hashes are commits in this repository. Findings outside the diff are carried forward from the full review at 4781c64, which covered:
+Incremental review at 862df06 (clean tree): the diff since 4bdacf6 for all 11 aspects. Four files were touched: `ddl/03-functions.sql` (`fn_create_booking`, `fn_reschedule_booking`), `sql/management/insert_availability_exception.sql`, `sql/management/end_availability_rule.sql` and `repo/AvailabilityManagementIT.kt`. The first review's hash, 4781c64, is the service's own repository; its tree is the one this repository holds at c51e603. Later hashes are commits in this repository. Findings outside the diff are carried forward from the full review at 4781c64, which covered:
 - `src/main/kotlin/`
 - `src/main/resources/` (33 SQL statements and `application.yaml`)
 - `docs/backend-design/ddl/*.sql`, which is the Flyway migration source and therefore code
@@ -76,7 +75,7 @@ bind future reviews.
   - The schema reaches the database through Flyway at every pod startup, from migrations generated out of `ddl/` (`build.gradle.kts:64-80`).
 - **Tests**: JUnit 5, in three tiers: pure unit tests, hand-faked orchestration tests, and `*IT` tests against real PostgreSQL (Testcontainers, or `BOOKING_TEST_JDBC_URL`).
   - The command `./gradlew test --offline` works here.
-  - Baseline @4781c64: 72 tests, 5 failing. At 4bdacf6 (amended): 84 tests, the same 5 failing. ApplicationContextIT fails 3 times (TSQ-009) and the BookingLifecycleIT relay pair fails twice (TSQ-001).
+  - Baseline @4781c64: 72 tests, 5 failing. At 862df06 (amended): 86 tests, the same 5 failing. ApplicationContextIT fails 3 times (TSQ-009) and the BookingLifecycleIT relay pair fails twice (TSQ-001).
 - **Exclusions**:
   - `build/`, `.idea/` and the Gradle wrapper
   - the documentation tooling: `docs/backend-design/build-review.mjs`, `package*.json` and `design-review.html` (owner: not a module)
@@ -128,7 +127,7 @@ bind future reviews.
     - provider setup, already-linked: → LOG-010.
     - setup and availability writes, pre-flight CHECK: → ERR-002.
     - setup and availability writes, retries: → ERR-007.
-    - availability edit vs create: → CON-001.
+    - availability edit vs create: → CON-001 (resolved @862df06).
   - Every other cell is decided or credited.
 - **Scoring interpretation**: none → 10; minors only → 9 flat (listed and
   counted, never deducted); within the worst open C/M tier each *verified*
@@ -146,7 +145,7 @@ _None yet._
 ## Open findings
 
 Severity: C = critical, M = major, m = minor; (w) = widespread (counts
-double). Findings open @ 4bdacf6. A finding body stays pinned to its
+double). Findings open @ 862df06. A finding body stays pinned to its
 discovery hash: 4781c64 unless its Status line says `found @<hash>`. Aspect sections stay in catalog order (same as the summary
 table); a `---` rule before each aspect header keeps the section boundary
 visible mid-scroll.
@@ -299,13 +298,7 @@ visible mid-scroll.
 
 ---
 
-### Concurrency safety (CON) — 3/10 · 7 open
-
-**CON-001 · C · isolated — An availability edit racing a create stores a booking inside blocked time and omits it from the R20 conflict list**
-- `core/management/AvailabilityManagement.kt:103-104` (conflicts read in a separate statement after the edit commits); `ddl/03-functions.sql:273-276` (fn_assert_bookable reads rules and exceptions without locks); `sql/management/availability_conflicts.sql`, `insert_availability_exception.sql`, `end_availability_rule.sql`
-- Worksheet: reach provider adds a BLOCK or ends a rule while a create for that window is in flight · residue external (corrected: a CONFIRMED booking is stored inside time already blocked when it committed, an outcome no serial order produces; verifier probe) · signal none → critical
-- Evidence (probe): with the create uncommitted, the BLOCK committed and the conflicts query returned 0. The create then committed CONFIRMED, and the same query returned 1.
-- Cross-ref: REQ (R20).
+### Concurrency safety (CON) — 4/10 · 6 open
 
 **CON-002 · M · isolated — Concurrent creates of the same new group session fail with BK001 or deadlock instead of joining**
 - `ddl/03-functions.sql:336-351` (ON CONFLICT arbitrates only `session_identity`; the non-arbiter `session_no_overlap` makes the second racer wait and then fail), `:348-350`; same shape at `:582-598`; `ddl/01-create-tables.sql:300-302`
@@ -396,7 +389,7 @@ visible mid-scroll.
 
 ---
 
-### Test quality (TSQ) — 4/10 · 14 open
+### Test quality (TSQ) — 4/10 · 16 open
 
 Every TSQ major below was confirmed by applying its named mutation to production code in a scratch clone and running `./gradlew test --offline`. "Green" means no failures beyond the 5 baseline failures.
 
@@ -464,6 +457,17 @@ Every TSQ major below was confirmed by applying its named mutation to production
 - `src/test/kotlin/dev/booking/worker/WorkerSchedulingTest.kt` uses two stand-in jobs, so `JOBS = 2` or a fourth real job stays green. `poolSize = 1` is caught; the author ran that mutation before committing.
 - Cross-ref: RDB-007.
 
+**TSQ-016 · M · isolated — The R20 lock protocol is pinned only for create against a BLOCK; the reschedule and end-rule locks are untested**
+- Status: open, found @862df06
+- `ddl/03-functions.sql:597-598` (reschedule `FOR SHARE`); `sql/management/end_availability_rule.sql:15` (`FOR UPDATE OF res`)
+- Worksheet: reach a reschedule or a rule end racing the other side · residue external (a booking stored inside time that was already withdrawn, missing from the R20 list) · signal none → major
+- Mutations, each run in a scratch copy: delete the reschedule lock → 86 tests, the 5 baseline failures only; delete the end-rule lock → the same. Both stay green.
+- Cross-ref: CON-001 (resolved).
+
+**TSQ-017 · m · isolated — The race tests prove "blocked" with a fixed sleep**
+- Status: open, found @862df06
+- `repo/AvailabilityManagementIT.kt:245-246`, `:285-286`: `Thread.sleep(500)` then `!isDone`. On a slow runner a removed lock could still pass. Polling `pg_stat_activity` for a lock wait would be deterministic.
+
 ---
 
 ### Type & null safety (TYP) — 9/10 · 2 open
@@ -478,13 +482,14 @@ Every TSQ major below was confirmed by applying its named mutation to production
 
 ---
 
-### Readability & maintainability (RDB) — 9/10 · 8 open
+### Readability & maintainability (RDB) — 9/10 · 9 open
 
 **RDB-001 · m · isolated — Hard-coded lookup ids in plpgsql**
 - `ddl/03-functions.sql:67, 72, 261, 357, 360, 473, 502-504, 604, 606, 650, 676, 678`. Drift risk is settled by `04-seed-lookups.sql:1-2`; only readability remains.
 
 **RDB-002 · m · isolated — Take, deadline and event mapping duplicated between fn_create_booking and fn_reschedule_booking**
 - `ddl/03-functions.sql:336-354` vs `:582-601`; `:363-368` vs `:607-611`; `:384, 389` vs `:519-526, 628`.
+- Wider @862df06: the R20 resource lock and its comment are a third piece duplicated between create (`ddl/03-functions.sql:327-332`) and reschedule (`:597-598`).
 
 **RDB-003 · m · isolated — Default values stated twice**
 - DDL defaults (`ddl/01:96-100, 161-164`) restated in `sql/management/insert_provider.sql:9-13` and `insert_service.sql:6-9`; `Page.first` (`core/listing/Listing.kt:43`) restated in `api/ListingController.kt:27-28, 41-42`.
@@ -509,9 +514,13 @@ Every TSQ major below was confirmed by applying its named mutation to production
 - Status: open, found @4bdacf6
 - `application.yaml:33-36`: `max.block.ms` bounds only `send()`. `KafkaEventPublisher.kt:37-38` then waits up to 10 s more on `get()`, and `OutboxRelay` runs up to 100 sends in sequence, so a pass has no overall bound. The 10000 also restates `send-timeout-seconds` as a second literal.
 
+**RDB-009 · m · isolated — `fn_assert_bookable`'s lock precondition is stated only in its callers**
+- Status: open, found @862df06
+- `ddl/03-functions.sql:327-332`, `:597-598`. The function is STABLE and cannot lock, and its `COMMENT ON FUNCTION` does not say that callers must take the resource lock first.
+
 ---
 
-### Requirements alignment (REQ) — 0/10 · 18 open
+### Requirements alignment (REQ) — 0/10 · 19 open
 
 **REQ-001 · C · isolated — Provider cancellation accepted without a reason (R7, UC7)**
 - `api/BookingDtos.kt:35`; `api/BookingController.kt:69-76`; `core/booking/BookingLifecycleService.kt:51-56`; `ddl/03-functions.sql:468-481, 500-516`; the column comment at `ddl/01:397` claims "mandatory … (R7)" but nothing enforces it
@@ -584,6 +593,10 @@ Every TSQ major below was confirmed by applying its named mutation to production
 - `ddl/03-functions.sql:571-583`: a customer may not reschedule a CONFIRMED booking inside the R6 window. UC8 and requirements §4.1 do not state it.
 - Cross-ref: LOG-008.
 
+**REQ-019 · m · isolated — The data design still says availability edits take no lock**
+- Status: open, found @862df06
+- `docs/backend-design/data-design.md:441` says UC2 and UC3 are "Plain DML, single statement, no locking". The R20 lock protocol added at 862df06 is documented only in SQL comments.
+
 ## Credited as intentional (recorded to prevent re-litigation)
 
 - Outbox at-least-once delivery: an unlocked claim, a republish after a lost ack or a timed-out send, and duplicates across relays. Evidence: `claim_due_events.sql:6-10` and domain-context §7 ("consumers must dedupe on eventId"). This covers duplicates only, not reordering (LOG-003).
@@ -611,6 +624,7 @@ reintroduced defect reopens its ID here (moves back to Open findings with
 - PAT-003 · m · Clock-derived policy default computed in the controller · `api/AvailabilityAdminController.kt`, `sys/TimeAndIdConfig.kt` · resolved @dc188b7
 - TSQ-002 · M · Per-booking event ordering has no test · `sql/outbox/claim_due_events.sql` · resolved @dc188b7
 - ERR-001 · C · A broker outage starves the hold-expiry and auto-complete sweeps: all three jobs share one scheduler thread · `worker/WorkerSchedules.kt`, `application.yaml`, `core/outbox/OutboxRelay.kt` · resolved @4bdacf6
+- CON-001 · C · An availability edit racing a create stores a booking inside blocked time and omits it from the R20 conflict list · `core/management/AvailabilityManagement.kt`, `ddl/03-functions.sql`, `sql/management/availability_conflicts.sql` · resolved @862df06
 
 ## History
 
@@ -621,5 +635,6 @@ reintroduced defect reopens its ID here (moves back to Open findings with
 | 2026-10-17 | eef5ebc | 2 | 3 | 4 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | REQ (0) | 4.9 |
 | 2026-10-17 | dc188b7 | 4 | 3 | 4 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | REQ (0) | 5.1 |
 | 2026-10-17 | 4bdacf6 | 4 | 4 | 4 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | REQ (0) | 5.2 |
+| 2026-10-17 | 862df06 | 4 | 4 | 4 | 6 | 4 | 5 | 9 | 4 | 9 | 9 | 0 | REQ (0) | 5.3 |
 
-Per-aspect baselines (diff basis for the next incremental review): LOG, ERR, SEC, PAT, CON, CMP, LGG, TSQ, TYP, RDB, REQ @ 4bdacf6, whole repo.
+Per-aspect baselines (diff basis for the next incremental review): LOG, ERR, SEC, PAT, CON, CMP, LGG, TSQ, TYP, RDB, REQ @ 862df06, whole repo.

@@ -16,9 +16,11 @@ What these skills add, compared with asking an agent to "review this":
 
 ## Demo
 
-A full review of a Kotlin booking service, with its domain context, is in [`demo/`](demo/): open the
-[rendered review page](https://si1verwind17.github.io/aspect-code-review/) or read the
-[ledger](demo/booking-service/docs/review/review.md) it is generated from.
+A full review of a Kotlin booking service, with its domain context, is in [`demo/`](demo/). It is followed by five
+fix commits, each re-reviewed incrementally. Open the
+[rendered review page](https://si1verwind17.github.io/aspect-code-review/) and drag its timeline to see what each
+fix resolved and how the scores moved, or read the [ledger](demo/booking-service/docs/review/review.md) it is
+generated from.
 
 ## Install
 

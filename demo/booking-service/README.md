@@ -52,9 +52,30 @@ eleven aspects (2026-10-17). **Two aspects scored 0/10 and three more are in the
 - **CON-001**: an availability edit racing a booking can store a confirmed booking inside time that was already
   blocked.
 
-The test suite is red at HEAD (5 of 72 fail), and mutations to capacity, cancel, reschedule and DST handling leave
-it green. Every finding, with its evidence, is in `docs/review/review.md`, rendered as `docs/review/review.html`.
-None is fixed. **Do not deploy this.**
+At that review the test suite was red (5 of 72 fail), and mutations to capacity, cancel, reschedule and DST
+handling left it green.
+
+Five fix commits followed, each scoped to named criticals and each re-reviewed incrementally by fresh clean-context
+reviewers before the next. The rendered page's timeline replays them one hash at a time:
+
+| Fix commit | Resolved | Score change |
+|---|---|---|
+| `66308b9` scopes for the contacts route and provider onboarding | SEC-001, SEC-002 | SEC 2 → 4 |
+| `eef5ebc` reschedule checks start, window, hold deadline and resource | LOG-001, LOG-002, LOG-005 | LOG 0 → 2 |
+| `dc188b7` outbox order under backoff; rule end on the provider's local day | LOG-003, LOG-004, PAT-003, TSQ-002 | LOG 2 → 4 |
+| `4bdacf6` one scheduler thread per worker job | ERR-001 | ERR 3 → 4 |
+| `862df06` availability edits and bookings serialise on the resource row | CON-001 | CON 3 → 4 |
+
+Each review also found new findings in the fixes themselves, mostly minors plus one test-quality major: a lock that
+no test pins. The latest scores:
+
+| LOG | ERR | SEC | PAT | CON | CMP | LGG | TSQ | TYP | RDB | REQ |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 4 | 4 | 4 | 6 | 4 | 5 | 9 | 4 | 9 | 9 | 0 |
+
+Requirements alignment is still 0, with four criticals open, and no aspect has reached the ship band. Every
+finding, with its evidence, is in `docs/review/review.md`, rendered as `docs/review/review.html`. **Do not deploy
+this.**
 
 That the review found them is the point of including it: they were written by an agent that believed the code was
 sound and said so at the gate.

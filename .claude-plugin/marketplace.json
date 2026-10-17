@@ -1,0 +1,29 @@
+{
+  "name": "aspect-code-review",
+  "owner": {
+    "name": "si1verwind17"
+  },
+  "metadata": {
+    "description": "Agent skills for scored, documented code review by aspect, with a persistent review ledger and an optional owner-confirmed domain-context document.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "aspect-code-review",
+      "source": "./",
+      "strict": false,
+      "description": "Scored, documented code review by aspect with a persistent ledger, plus an optional owner-confirmed domain-context document the review reads when present.",
+      "version": "1.0.0",
+      "author": {
+        "name": "si1verwind17"
+      },
+      "license": "MIT",
+      "keywords": ["code-review", "audit", "domain-context", "ledger", "severity"],
+      "category": "workflow",
+      "skills": [
+        "./skills/reviewing-code-by-aspect",
+        "./skills/documenting-domain-context"
+      ]
+    }
+  ]
+}

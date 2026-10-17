@@ -7,11 +7,9 @@ history. Finding IDs are stable and never reused. Keep the section names and
 order of this template — incremental reviews and future maintainers navigate
 by them.
 
-## Summary — 2026-10-17 @ eef5ebc (incremental review, 11 aspects, scope: diff since 66308b9)
+## Summary — 2026-10-17 @ dc188b7 (incremental review, 11 aspects, scope: diff since eef5ebc)
 
 **Worst aspect: Requirements alignment (REQ) at 0/10.** Open criticals:
-- LOG-003 C: the outbox claim publishes event N+1 while N is in backoff.
-- LOG-004 C: ending a rule with no body uses the UTC date, not the provider's local date.
 - ERR-001 C: a broker outage starves the hold-expiry and auto-complete sweeps (one scheduler thread).
 - CON-001 C: an availability edit racing a create stores a booking inside blocked time and leaves it off the R20 conflict list.
 - REQ-001 C: a provider can cancel without the reason R7 requires.
@@ -19,18 +17,18 @@ by them.
 - REQ-003 C: BookingCompleted does not say whether the system or the provider completed it (UC12).
 - REQ-004 C: there is no erasure, export or retention (NF5).
 
-This review covered one fix commit to reschedule. The commit refuses a started booking (R27), refuses a customer moving a confirmed booking inside the R6 window, keeps a HELD request's deadline, and passes `resourceRef` through. Three findings were resolved: LOG-001 C, LOG-002 C and LOG-005 C. Logic correctness moves from 0 to 2, with two criticals left. The new reschedule tests do not cover everything: three mutations still pass the suite, so TSQ-006 stays open with a narrower scope. Three minors were found (REQ-018, RDB-005, RDB-006). Five open findings gained an occurrence from the diff: CMP-001 (the V3 migration was edited in place), LOG-012, PAT-002, SEC-003 and LOG-008. Two clean-context reviewers covered the diff. The verification gate for TSQ is a mutation run, and each mutation stayed green.
+This review covered one fix commit with two changes. The outbox claim now picks each booking's oldest event before applying backoff, and ending a rule with no date now defaults to the provider's local day. Four findings were resolved: LOG-003 C, LOG-004 C, PAT-003 m and TSQ-002 M. TSQ-002's mutation, dropping `DISTINCT ON`, was run in a scratch copy and now fails the new backoff test. Logic correctness moves from 2 to 4: no critical is left, and six majors remain. TSQ-001 narrowed. LOG-009 is still open, because the local "today" still precedes a future effective_from. No finding was added. Two clean-context reviewers covered the diff.
 
 | Aspect | Score | Worst open | Open findings |
 |---|---|---|---|
-| Logic correctness (LOG) | **2** | critical | LOG-003 C, LOG-004 C, LOG-006 M, LOG-007 M, LOG-008 M, LOG-009 M, LOG-010 M, LOG-011 M, LOG-012 m, LOG-013 m |
+| Logic correctness (LOG) | **4** | major | LOG-006 M, LOG-007 M, LOG-008 M, LOG-009 M, LOG-010 M, LOG-011 M, LOG-012 m, LOG-013 m |
 | Error handling (ERR) | **3** | critical | ERR-001 C, ERR-002 M (w), ERR-003 M, ERR-004 m, ERR-005 m, ERR-006 m, ERR-007 m (w), ERR-008 m |
 | Security (SEC) | **4** | major | SEC-003 M (w), SEC-004 M (w), SEC-005 M, SEC-006 m, SEC-007 m, SEC-008 m, SEC-009 m |
-| Code pattern (PAT) | **6** | major | PAT-001 M, PAT-002 m, PAT-003 m, PAT-004 m, PAT-005 m (w), PAT-006 m |
+| Code pattern (PAT) | **6** | major | PAT-001 M, PAT-002 m, PAT-004 m, PAT-005 m (w), PAT-006 m |
 | Concurrency safety (CON) | **3** | critical | CON-001 C, CON-002 M, CON-003 M, CON-004 M, CON-005 M (w), CON-006 M, CON-007 m |
 | Contract & compatibility (CMP) | **5** | major | CMP-001 M, CMP-002 M, CMP-003 m (w), CMP-004 m |
 | Logging (LGG) | **9** | minor | LGG-001 m, LGG-002 m (w), LGG-003 m, LGG-004 m, LGG-005 m, LGG-006 m |
-| Test quality (TSQ) | **4** | major | TSQ-001 M, TSQ-002 M, TSQ-003 M, TSQ-004 M, TSQ-005 M, TSQ-006 M, TSQ-007 M, TSQ-008 M, TSQ-009 M, TSQ-010 m, TSQ-011 m, TSQ-012 m, TSQ-013 m, TSQ-014 m |
+| Test quality (TSQ) | **4** | major | TSQ-001 M, TSQ-003 M, TSQ-004 M, TSQ-005 M, TSQ-006 M, TSQ-007 M, TSQ-008 M, TSQ-009 M, TSQ-010 m, TSQ-011 m, TSQ-012 m, TSQ-013 m, TSQ-014 m |
 | Type & null safety (TYP) | **9** | minor | TYP-001 m, TYP-002 m (w) |
 | Readability & maintainability (RDB) | **9** | minor | RDB-001 m, RDB-002 m, RDB-003 m, RDB-004 m, RDB-005 m, RDB-006 m |
 | Requirements alignment (REQ) | **0** | critical | REQ-001 C, REQ-002 C (w), REQ-003 C, REQ-004 C, REQ-005 M, REQ-006 M, REQ-007 M, REQ-008 M, REQ-009 M, REQ-010 M, REQ-011 M, REQ-012 m (w), REQ-013 m, REQ-014 m, REQ-015 m, REQ-016 m, REQ-017 m, REQ-018 m |
@@ -39,11 +37,11 @@ Rows stay in catalog order (the History table's column order), never sorted
 by score — so any two reviews line up row-for-row. The worst aspects are
 named in the prose above, not by reordering the table.
 
-Average (trend only, never the headline): **4.9**.
+Average (trend only, never the headline): **5.1**.
 
 ## Review scope
 
-Incremental review at eef5ebc (clean tree): the diff since 66308b9 for all 11 aspects. Five files were touched: `ddl/03-functions.sql` (`fn_reschedule_booking`), `api/BookingController.kt`, `core/booking/BookingLifecycleService.kt`, `sys/CoreConfig.kt` and `repo/BookingLifecycleIT.kt`. The first review's hash, 4781c64, is the service's own repository; its tree is the one this repository holds at c51e603. Later hashes are commits in this repository. Findings outside the diff are carried forward from the full review at 4781c64, which covered:
+Incremental review at dc188b7 (clean tree): the diff since eef5ebc for all 11 aspects. Seven files were touched: `sql/outbox/claim_due_events.sql`, `sql/management/end_availability_rule.sql`, `api/AvailabilityAdminController.kt`, `core/management/AvailabilityManagement.kt`, `repo/JdbcAvailabilityAdminRepository.kt`, `repo/BookingLifecycleIT.kt` and `repo/AvailabilityManagementIT.kt`. The first review's hash, 4781c64, is the service's own repository; its tree is the one this repository holds at c51e603. Later hashes are commits in this repository. Findings outside the diff are carried forward from the full review at 4781c64, which covered:
 - `src/main/kotlin/`
 - `src/main/resources/` (33 SQL statements and `application.yaml`)
 - `docs/backend-design/ddl/*.sql`, which is the Flyway migration source and therefore code
@@ -79,7 +77,7 @@ bind future reviews.
   - The schema reaches the database through Flyway at every pod startup, from migrations generated out of `ddl/` (`build.gradle.kts:64-80`).
 - **Tests**: JUnit 5, in three tiers: pure unit tests, hand-faked orchestration tests, and `*IT` tests against real PostgreSQL (Testcontainers, or `BOOKING_TEST_JDBC_URL`).
   - The command `./gradlew test --offline` works here.
-  - Baseline @4781c64: 72 tests, 5 failing. At eef5ebc (amended): 81 tests, the same 5 failing. ApplicationContextIT fails 3 times (TSQ-009) and the BookingLifecycleIT relay pair fails twice (TSQ-001).
+  - Baseline @4781c64: 72 tests, 5 failing. At dc188b7 (amended): 83 tests, the same 5 failing. ApplicationContextIT fails 3 times (TSQ-009) and the BookingLifecycleIT relay pair fails twice (TSQ-001).
 - **Exclusions**:
   - `build/`, `.idea/` and the Gradle wrapper
   - the documentation tooling: `docs/backend-design/build-review.mjs`, `package*.json` and `design-review.html` (owner: not a module)
@@ -122,7 +120,7 @@ bind future reviews.
     - create, ambiguous: concurrent same-key requests → CON-004.
     - create, replay with a different body → LOG-011.
     - sweeps, delayed: starved by the relay → ERR-001.
-    - relay, partial order: → LOG-003.
+    - relay, partial order: → LOG-003 (resolved @dc188b7).
     - relay, rejected by the broker, persistently: no escalation → REQ-002.
     - gate consume, partial: claim before effect → ERR-004.
     - gate consume, malformed: → ERR-005.
@@ -149,26 +147,14 @@ _None yet._
 ## Open findings
 
 Severity: C = critical, M = major, m = minor; (w) = widespread (counts
-double). Findings open @ eef5ebc. A finding body stays pinned to its
+double). Findings open @ dc188b7. A finding body stays pinned to its
 discovery hash: 4781c64 unless its Status line says `found @<hash>`. Aspect sections stay in catalog order (same as the summary
 table); a `---` rule before each aspect header keeps the section boundary
 visible mid-scroll.
 
 ---
 
-### Logic correctness (LOG) — 2/10 · 10 open
-
-**LOG-003 · C · isolated — Outbox claim applies backoff before picking each booking's oldest event, so N+1 is published while N waits**
-- `src/main/resources/sql/outbox/claim_due_events.sql:24-30`; `record_failure.sql:5`; `core/outbox/OutboxRelay.kt:39-44`
-- Worksheet: reach relay on every worker; any failed or timed-out send of N while N+1 exists (e.g. broker recovery) · residue external (`booking-lifecycle-v1` permanently carries N+1 ahead of N for that key) · signal none → critical
-- Intent: the file's own comment ("event N+1 … is never sent while N is still unsent"), R29, domain-context §7. The probe claim returned only seq 2 while seq 1 was in backoff. The draft-topic status lowers the cost of a fix, not the reach. Domain-context §7's "only the oldest undispatched event per booking is claimed" is contradicted by this code.
-- Cross-ref: CON, TSQ-002.
-
-**LOG-004 · C · isolated — Ending a rule with no body sets effective_until to today's UTC date, not the provider's local date**
-- `api/AvailabilityAdminController.kt:66`; `ddl/03-functions.sql:54-61`
-- Worksheet: reach provider admin ending a rule with no body while the provider-local date differs from UTC · residue external (rule persisted one day long or short) · signal none → critical
-- Intent: R14. Failing input: an America/Los_Angeles provider ends a rule at 2026-10-17 18:00 PDT. The stored date is 2026-10-18, so local Oct 18 still offers 29 slots. Pacific/Auckland loses today early.
-- Cross-ref: PAT-003, LOG-009.
+### Logic correctness (LOG) — 4/10 · 8 open
 
 **LOG-006 · M · isolated — Availability search applies neither R4 lead time nor R5 horizon and offers past starts**
 - `ddl/03-functions.sql:84-156` (comment `:156` "R4 and R5 are applied by the caller"); `core/availability/AvailabilityService.kt:22-27`; `sql/availability/search_availability.sql:1-2`
@@ -192,6 +178,7 @@ visible mid-scroll.
 - `api/AvailabilityAdminController.kt:66`; `sql/management/end_availability_rule.sql:3-9`; CHECK `availability_rule_dates_forward` at `ddl/01-create-tables.sql:239`
 - Worksheet: reach provider withdrawing a pre-published rule · residue request · signal caller (500) → major
 - Evidence: the default "today" is before effective_from, giving 23514 → 500. Even an explicit date leaves at least one day published.
+- Still open @dc188b7: the no-body default is now the provider's local today (`end_availability_rule.sql:5-6`), but it still precedes a future effective_from, so the CHECK still answers 500.
 
 **LOG-010 · M · isolated — Re-linking an already-linked service and resource answers 404 "no such provider, service or resource"**
 - `sql/management/link_service_resource.sql:10`; `repo/JdbcProviderSetupRepository.kt:77`; `core/management/ProviderSetup.kt:89-93`; `api/ProviderSetupController.kt:106-110`
@@ -297,7 +284,7 @@ visible mid-scroll.
 
 ---
 
-### Code pattern (PAT) — 6/10 · 6 open
+### Code pattern (PAT) — 6/10 · 5 open
 
 **PAT-001 · M · isolated — Worker pods serve the whole HTTP API: only worker beans are profile-gated**
 - `@Profile` appears only at `worker/*.kt` (`KafkaEventPublisher.kt:22`, `WorkerConfig.kt:28`, `KafkaConfig.kt:23`, `GateResolutionListener.kt:25`, `WorkerSchedules.kt:15,36`). All `@RestController` classes, `ApiExceptionHandler` and `SecurityConfig` are ungated, and `spring-boot-starter-web` is unconditional (`build.gradle.kts:28`).
@@ -307,9 +294,6 @@ visible mid-scroll.
 **PAT-002 · m · isolated — Repo adapter re-implements the reschedule state decision**
 - `repo/JdbcBookingLifecycle.kt:82-83` duplicates `ddl/03-functions.sql:603-606`; `fn_reschedule_booking` returns no state.
 - Wider @eef5ebc: the SQL now has a third branch (HELD stays HELD whatever the gate, `ddl/03-functions.sql:619-628`), and the Kotlin still infers the state from the gate (`JdbcBookingLifecycle.kt:82-83`). They diverge only if a provider's confirmation mode changes while it has a HELD booking, and no API changes the mode. The `COMMENT ON FUNCTION` at `ddl/03:660` is now stale.
-
-**PAT-003 · m · isolated — Clock-derived policy default computed in the controller**
-- `api/AvailabilityAdminController.kt:66` reads the system clock, against `sys/TimeAndIdConfig.kt:8-12`. Cross-ref LOG-004.
 
 **PAT-004 · m · isolated — Logging inside core**
 - `core/outbox/OutboxRelay.kt:4, 21, 45-48`, against `BookingOutcomeResponder.kt:15-16` ("Business code does not log").
@@ -419,7 +403,7 @@ visible mid-scroll.
 
 ---
 
-### Test quality (TSQ) — 4/10 · 14 open
+### Test quality (TSQ) — 4/10 · 13 open
 
 Every TSQ major below was confirmed by applying its named mutation to production code in a scratch clone and running `./gradlew test --offline`. "Green" means no failures beyond the 5 baseline failures.
 
@@ -430,10 +414,8 @@ Every TSQ major below was confirmed by applying its named mutation to production
   - Root cause confirmed: changing only the default makes both tests pass.
   - Mutation `mark_dispatched.sql:7 → AND false` was green; with the clock fixed it goes red.
   - These are the only real-DB tests of `mark_dispatched`, `record_failure` and `claim_due_events`.
+- Narrowed @dc188b7: a new clock-independent test (a 2100 instant) covers `claim_due_events` and `record_failure` against the real database. `mark_dispatched` is still covered only by the red relay pair.
 - Cross-ref: CON (app clock vs DB clock).
-
-**TSQ-002 · M · isolated — Per-booking event ordering has no test**
-- `sql/outbox/claim_due_events.sql:24-30`. Mutation: drop `DISTINCT ON (booking_id)` → green, and still green with the clock fixed. Worksheet: reach any booking with more than one pending event · residue external · signal none → major. Cross-ref: LOG-003.
 
 **TSQ-003 · M · isolated — Capacity release when a booking leaves HELD or CONFIRMED is untested**
 - `ddl/03-functions.sql:489-491`. Mutation: release → `PERFORM 1` → green (also with the clock fixed). Worksheet: reach every cancel, decline, expiry and no-show · residue external (permanent capacity leak) · signal none → major.
@@ -618,6 +600,10 @@ reintroduced defect reopens its ID here (moves back to Open findings with
 - LOG-001 · C · Reschedule never checks the original start, so R27 (and the R6 window) can be bypassed · `docs/backend-design/ddl/03-functions.sql`, `04-seed-lookups.sql` · resolved @eef5ebc
 - LOG-002 · C · Rescheduling a HELD booking renews its hold deadline · `ddl/03-functions.sql`, `core/booking/GatePolicy.kt` · resolved @eef5ebc
 - LOG-005 · C · Reschedule accepts `resourceRef` on the wire and silently drops it · `api/BookingDtos.kt`, `api/BookingController.kt`, `ddl/03-functions.sql` · resolved @eef5ebc
+- LOG-003 · C · Outbox claim applies backoff before picking each booking's oldest event, so N+1 is published while N waits · `src/main/resources/sql/outbox/claim_due_events.sql`, `record_failure.sql`, `core/outbox/OutboxRelay.kt` · resolved @dc188b7
+- LOG-004 · C · Ending a rule with no body sets effective_until to today's UTC date, not the provider's local date · `api/AvailabilityAdminController.kt`, `ddl/03-functions.sql` · resolved @dc188b7
+- PAT-003 · m · Clock-derived policy default computed in the controller · `api/AvailabilityAdminController.kt`, `sys/TimeAndIdConfig.kt` · resolved @dc188b7
+- TSQ-002 · M · Per-booking event ordering has no test · `sql/outbox/claim_due_events.sql` · resolved @dc188b7
 
 ## History
 
@@ -626,5 +612,6 @@ reintroduced defect reopens its ID here (moves back to Open findings with
 | 2026-10-17 | 4781c64 | 0 | 3 | 2 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | LOG, REQ (0) | 4.5 |
 | 2026-10-17 | 66308b9 | 0 | 3 | 4 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | LOG, REQ (0) | 4.7 |
 | 2026-10-17 | eef5ebc | 2 | 3 | 4 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | REQ (0) | 4.9 |
+| 2026-10-17 | dc188b7 | 4 | 3 | 4 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | REQ (0) | 5.1 |
 
-Per-aspect baselines (diff basis for the next incremental review): LOG, ERR, SEC, PAT, CON, CMP, LGG, TSQ, TYP, RDB, REQ @ eef5ebc, whole repo.
+Per-aspect baselines (diff basis for the next incremental review): LOG, ERR, SEC, PAT, CON, CMP, LGG, TSQ, TYP, RDB, REQ @ dc188b7, whole repo.

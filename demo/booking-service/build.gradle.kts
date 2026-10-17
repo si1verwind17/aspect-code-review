@@ -49,6 +49,10 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    // MockMvc plus jwt() request post-processors: the route rules in
+    // SecurityConfig are tested against the real filter chain, not re-stated.
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+    testImplementation("org.springframework.security:spring-security-test")
     // Testcontainers is the deliverable's integration-test infrastructure.
     // AbstractPostgresTest falls back to an already-running database when
     // BOOKING_TEST_JDBC_URL is set, which is how these run where Docker

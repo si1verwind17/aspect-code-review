@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * Service-to-service endpoints.  Never routed through public ingress.
+ * Service-to-service endpoints.  Reachable only with a token granted
+ * `SecurityConfig.CONTACTS_SCOPE`; an end-user token is refused before this
+ * controller runs, whatever booking reference it holds.
  *
  * This exists solely because PD17 keeps PII out of events: a notification service
  * receives identifiers and must call back for the address it needs

@@ -39,8 +39,8 @@ class ListingService(
     }
 
     /**
-     * Contact resolution for a consuming service (AQ3).  Not customer-facing and
-     * not exposed through public ingress; the caller is another service.
+     * Contact resolution for a consuming service (AQ3).  Not customer-facing: the
+     * route requires the contacts scope, which only a service grant carries.
      */
     fun contactsFor(bookingRef: UUID): BookingContacts? = listings.contactsFor(bookingRef)
 }

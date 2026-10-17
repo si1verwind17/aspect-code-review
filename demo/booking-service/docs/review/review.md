@@ -7,41 +7,40 @@ history. Finding IDs are stable and never reused. Keep the section names and
 order of this template — incremental reviews and future maintainers navigate
 by them.
 
-## Summary — 2026-10-17 @ dc188b7 (incremental review, 11 aspects, scope: diff since eef5ebc)
+## Summary — 2026-10-17 @ 4bdacf6 (incremental review, 11 aspects, scope: diff since dc188b7)
 
 **Worst aspect: Requirements alignment (REQ) at 0/10.** Open criticals:
-- ERR-001 C: a broker outage starves the hold-expiry and auto-complete sweeps (one scheduler thread).
 - CON-001 C: an availability edit racing a create stores a booking inside blocked time and leaves it off the R20 conflict list.
 - REQ-001 C: a provider can cancel without the reason R7 requires.
 - REQ-002 C: no metric or alert exists for undispatched events (NF11).
 - REQ-003 C: BookingCompleted does not say whether the system or the provider completed it (UC12).
 - REQ-004 C: there is no erasure, export or retention (NF5).
 
-This review covered one fix commit with two changes. The outbox claim now picks each booking's oldest event before applying backoff, and ending a rule with no date now defaults to the provider's local day. Four findings were resolved: LOG-003 C, LOG-004 C, PAT-003 m and TSQ-002 M. TSQ-002's mutation, dropping `DISTINCT ON`, was run in a scratch copy and now fails the new backoff test. Logic correctness moves from 2 to 4: no critical is left, and six majors remain. TSQ-001 narrowed. LOG-009 is still open, because the local "today" still precedes a future effective_from. No finding was added. Two clean-context reviewers covered the diff.
+This review covered one fix commit, which gives each worker job its own scheduler thread and bounds `max.block.ms`. One finding was resolved: ERR-001 C. A relay pass blocked on the broker no longer holds back the hold-expiry or auto-complete sweep. Error handling moves from 3 to 4: its worst open findings are now two majors, one of them widespread. LOG-012's window shrank to the sweep interval. Three minors were found: RDB-007, RDB-008 and TSQ-015. Two clean-context reviewers covered the diff.
 
 | Aspect | Score | Worst open | Open findings |
 |---|---|---|---|
 | Logic correctness (LOG) | **4** | major | LOG-006 M, LOG-007 M, LOG-008 M, LOG-009 M, LOG-010 M, LOG-011 M, LOG-012 m, LOG-013 m |
-| Error handling (ERR) | **3** | critical | ERR-001 C, ERR-002 M (w), ERR-003 M, ERR-004 m, ERR-005 m, ERR-006 m, ERR-007 m (w), ERR-008 m |
+| Error handling (ERR) | **4** | major | ERR-002 M (w), ERR-003 M, ERR-004 m, ERR-005 m, ERR-006 m, ERR-007 m (w), ERR-008 m |
 | Security (SEC) | **4** | major | SEC-003 M (w), SEC-004 M (w), SEC-005 M, SEC-006 m, SEC-007 m, SEC-008 m, SEC-009 m |
 | Code pattern (PAT) | **6** | major | PAT-001 M, PAT-002 m, PAT-004 m, PAT-005 m (w), PAT-006 m |
 | Concurrency safety (CON) | **3** | critical | CON-001 C, CON-002 M, CON-003 M, CON-004 M, CON-005 M (w), CON-006 M, CON-007 m |
 | Contract & compatibility (CMP) | **5** | major | CMP-001 M, CMP-002 M, CMP-003 m (w), CMP-004 m |
 | Logging (LGG) | **9** | minor | LGG-001 m, LGG-002 m (w), LGG-003 m, LGG-004 m, LGG-005 m, LGG-006 m |
-| Test quality (TSQ) | **4** | major | TSQ-001 M, TSQ-003 M, TSQ-004 M, TSQ-005 M, TSQ-006 M, TSQ-007 M, TSQ-008 M, TSQ-009 M, TSQ-010 m, TSQ-011 m, TSQ-012 m, TSQ-013 m, TSQ-014 m |
+| Test quality (TSQ) | **4** | major | TSQ-001 M, TSQ-003 M, TSQ-004 M, TSQ-005 M, TSQ-006 M, TSQ-007 M, TSQ-008 M, TSQ-009 M, TSQ-010 m, TSQ-011 m, TSQ-012 m, TSQ-013 m, TSQ-014 m, TSQ-015 m |
 | Type & null safety (TYP) | **9** | minor | TYP-001 m, TYP-002 m (w) |
-| Readability & maintainability (RDB) | **9** | minor | RDB-001 m, RDB-002 m, RDB-003 m, RDB-004 m, RDB-005 m, RDB-006 m |
+| Readability & maintainability (RDB) | **9** | minor | RDB-001 m, RDB-002 m, RDB-003 m, RDB-004 m, RDB-005 m, RDB-006 m, RDB-007 m, RDB-008 m |
 | Requirements alignment (REQ) | **0** | critical | REQ-001 C, REQ-002 C (w), REQ-003 C, REQ-004 C, REQ-005 M, REQ-006 M, REQ-007 M, REQ-008 M, REQ-009 M, REQ-010 M, REQ-011 M, REQ-012 m (w), REQ-013 m, REQ-014 m, REQ-015 m, REQ-016 m, REQ-017 m, REQ-018 m |
 
 Rows stay in catalog order (the History table's column order), never sorted
 by score — so any two reviews line up row-for-row. The worst aspects are
 named in the prose above, not by reordering the table.
 
-Average (trend only, never the headline): **5.1**.
+Average (trend only, never the headline): **5.2**.
 
 ## Review scope
 
-Incremental review at dc188b7 (clean tree): the diff since eef5ebc for all 11 aspects. Seven files were touched: `sql/outbox/claim_due_events.sql`, `sql/management/end_availability_rule.sql`, `api/AvailabilityAdminController.kt`, `core/management/AvailabilityManagement.kt`, `repo/JdbcAvailabilityAdminRepository.kt`, `repo/BookingLifecycleIT.kt` and `repo/AvailabilityManagementIT.kt`. The first review's hash, 4781c64, is the service's own repository; its tree is the one this repository holds at c51e603. Later hashes are commits in this repository. Findings outside the diff are carried forward from the full review at 4781c64, which covered:
+Incremental review at 4bdacf6 (clean tree): the diff since dc188b7 for all 11 aspects. Four files were touched: the new `worker/WorkerScheduling.kt`, `worker/WorkerConfig.kt`, `src/main/resources/application.yaml` and the new `worker/WorkerSchedulingTest.kt`. The first review's hash, 4781c64, is the service's own repository; its tree is the one this repository holds at c51e603. Later hashes are commits in this repository. Findings outside the diff are carried forward from the full review at 4781c64, which covered:
 - `src/main/kotlin/`
 - `src/main/resources/` (33 SQL statements and `application.yaml`)
 - `docs/backend-design/ddl/*.sql`, which is the Flyway migration source and therefore code
@@ -77,7 +76,7 @@ bind future reviews.
   - The schema reaches the database through Flyway at every pod startup, from migrations generated out of `ddl/` (`build.gradle.kts:64-80`).
 - **Tests**: JUnit 5, in three tiers: pure unit tests, hand-faked orchestration tests, and `*IT` tests against real PostgreSQL (Testcontainers, or `BOOKING_TEST_JDBC_URL`).
   - The command `./gradlew test --offline` works here.
-  - Baseline @4781c64: 72 tests, 5 failing. At dc188b7 (amended): 83 tests, the same 5 failing. ApplicationContextIT fails 3 times (TSQ-009) and the BookingLifecycleIT relay pair fails twice (TSQ-001).
+  - Baseline @4781c64: 72 tests, 5 failing. At 4bdacf6 (amended): 84 tests, the same 5 failing. ApplicationContextIT fails 3 times (TSQ-009) and the BookingLifecycleIT relay pair fails twice (TSQ-001).
 - **Exclusions**:
   - `build/`, `.idea/` and the Gradle wrapper
   - the documentation tooling: `docs/backend-design/build-review.mjs`, `package*.json` and `design-review.html` (owner: not a module)
@@ -119,7 +118,7 @@ bind future reviews.
   - Empty or problematic cells:
     - create, ambiguous: concurrent same-key requests → CON-004.
     - create, replay with a different body → LOG-011.
-    - sweeps, delayed: starved by the relay → ERR-001.
+    - sweeps, delayed: starved by the relay → ERR-001 (resolved @4bdacf6).
     - relay, partial order: → LOG-003 (resolved @dc188b7).
     - relay, rejected by the broker, persistently: no escalation → REQ-002.
     - gate consume, partial: claim before effect → ERR-004.
@@ -147,7 +146,7 @@ _None yet._
 ## Open findings
 
 Severity: C = critical, M = major, m = minor; (w) = widespread (counts
-double). Findings open @ dc188b7. A finding body stays pinned to its
+double). Findings open @ 4bdacf6. A finding body stays pinned to its
 discovery hash: 4781c64 unless its Status line says `found @<hash>`. Aspect sections stay in catalog order (same as the summary
 table); a `---` rule before each aspect header keeps the section boundary
 visible mid-scroll.
@@ -192,7 +191,7 @@ visible mid-scroll.
 - Cross-ref: CMP.
 
 **LOG-012 · m · isolated — Approval, gate resolution or reschedule accepted after hold_deadline until the next sweep**
-- `ddl/03-functions.sql:464-466` (checks starts_at only); sweep interval `application.yaml:54`. With ERR-001 the window can stretch to a whole relay pass.
+- `ddl/03-functions.sql:464-466` (checks starts_at only); sweep interval `application.yaml:54`. Since 4bdacf6 the expiry sweep has its own thread, so the window is the 30 s interval plus the sweep's run time (ERR-001 resolved).
 - Second occurrence @eef5ebc: `fn_reschedule_booking` (`ddl/03-functions.sql:619-623`) moves a HELD booking whose deadline has already lapsed, and returns 200. The sweep expires it within 30 s.
 
 **LOG-013 · m · isolated — Ending a rule with an explicit date can extend an already-ended rule**
@@ -200,13 +199,7 @@ visible mid-scroll.
 
 ---
 
-### Error handling (ERR) — 3/10 · 8 open
-
-**ERR-001 · C · isolated — A broker outage starves the hold-expiry and auto-complete sweeps: all three jobs share one scheduler thread**
-- `worker/WorkerSchedules.kt:20-21, 41-42, 47-48`; `application.yaml:7-9` (virtual threads → SimpleAsyncTaskScheduler; its fixed-delay executor has core size 1, per javap of spring-context 7.0.9); `core/outbox/OutboxRelay.kt:28-50`; `worker/KafkaEventPublisher.kt:42-43`
-- Worksheet: reach worker replicas during any broker outage with a backlog · residue external (HELD bookings stay HELD past hold_deadline, holding capacity; lapsed holds remain approvable) · signal none (no alerting) → critical
-- Evidence: 100 events × 10 s `.get`, or × 60 s `max.block.ms` (not overridden), gives one relay pass of roughly 17–100 min. Expiry runs only between passes. This contradicts the outbox_event design comment "a broker outage … never fails a booking". No TaskScheduler or pool is configured (`worker/WorkerConfig.kt:27-57`).
-- Cross-ref: CON, LOG-012.
+### Error handling (ERR) — 4/10 · 7 open
 
 **ERR-002 · M · widespread — Caller mistakes become 500 "internal error" plus an ERROR "unhandled defect" stack trace**
 - `api/ApiExceptionHandler.kt:39-45` (catch-all, which wins over Spring's defaults). It catches:
@@ -403,7 +396,7 @@ visible mid-scroll.
 
 ---
 
-### Test quality (TSQ) — 4/10 · 13 open
+### Test quality (TSQ) — 4/10 · 14 open
 
 Every TSQ major below was confirmed by applying its named mutation to production code in a scratch clone and running `./gradlew test --offline`. "Green" means no failures beyond the 5 baseline failures.
 
@@ -466,6 +459,11 @@ Every TSQ major below was confirmed by applying its named mutation to production
 - Status: open, found @66308b9
 - `src/test/kotlin/dev/booking/sys/SecurityConfigTest.kt:41-46` restates `/v1/providers` and the contacts route instead of using `ProviderSetupController.kt:28` and `InternalController.kt:29`. Moving the real contacts route outside `/internal/` leaves the suite green. `jwt()` injects authorities directly, so the scope-claim conversion is not exercised. The real wiring is covered only by ApplicationContextIT, which is red (TSQ-009).
 
+**TSQ-015 · m · isolated — The scheduling test does not pin the pool size to the job count**
+- Status: open, found @4bdacf6
+- `src/test/kotlin/dev/booking/worker/WorkerSchedulingTest.kt` uses two stand-in jobs, so `JOBS = 2` or a fourth real job stays green. `poolSize = 1` is caught; the author ran that mutation before committing.
+- Cross-ref: RDB-007.
+
 ---
 
 ### Type & null safety (TYP) — 9/10 · 2 open
@@ -480,7 +478,7 @@ Every TSQ major below was confirmed by applying its named mutation to production
 
 ---
 
-### Readability & maintainability (RDB) — 9/10 · 6 open
+### Readability & maintainability (RDB) — 9/10 · 8 open
 
 **RDB-001 · m · isolated — Hard-coded lookup ids in plpgsql**
 - `ddl/03-functions.sql:67, 72, 261, 357, 360, 473, 502-504, 604, 606, 650, 676, 678`. Drift risk is settled by `04-seed-lookups.sql:1-2`; only readability remains.
@@ -502,6 +500,14 @@ Every TSQ major below was confirmed by applying its named mutation to production
 **RDB-006 · m · isolated — Second-resource test setup hard-codes the fixture date**
 - Status: open, found @eef5ebc
 - `repo/BookingLifecycleIT.kt`, the named-resource test, repeats `DATE '2026-09-02'` instead of deriving it from `slot`.
+
+**RDB-007 · m · isolated — The scheduler pool size is hand-counted against the scheduled jobs**
+- Status: open, found @4bdacf6
+- `worker/WorkerScheduling.kt:32-34` (`JOBS = 3`) against the three `@Scheduled` methods in `worker/WorkerSchedules.kt`. A fourth job would share the three threads, and nothing would flag it.
+
+**RDB-008 · m · isolated — The `max.block.ms` comment claims a bounded relay pass the code does not give**
+- Status: open, found @4bdacf6
+- `application.yaml:33-36`: `max.block.ms` bounds only `send()`. `KafkaEventPublisher.kt:37-38` then waits up to 10 s more on `get()`, and `OutboxRelay` runs up to 100 sends in sequence, so a pass has no overall bound. The 10000 also restates `send-timeout-seconds` as a second literal.
 
 ---
 
@@ -604,6 +610,7 @@ reintroduced defect reopens its ID here (moves back to Open findings with
 - LOG-004 · C · Ending a rule with no body sets effective_until to today's UTC date, not the provider's local date · `api/AvailabilityAdminController.kt`, `ddl/03-functions.sql` · resolved @dc188b7
 - PAT-003 · m · Clock-derived policy default computed in the controller · `api/AvailabilityAdminController.kt`, `sys/TimeAndIdConfig.kt` · resolved @dc188b7
 - TSQ-002 · M · Per-booking event ordering has no test · `sql/outbox/claim_due_events.sql` · resolved @dc188b7
+- ERR-001 · C · A broker outage starves the hold-expiry and auto-complete sweeps: all three jobs share one scheduler thread · `worker/WorkerSchedules.kt`, `application.yaml`, `core/outbox/OutboxRelay.kt` · resolved @4bdacf6
 
 ## History
 
@@ -613,5 +620,6 @@ reintroduced defect reopens its ID here (moves back to Open findings with
 | 2026-10-17 | 66308b9 | 0 | 3 | 4 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | LOG, REQ (0) | 4.7 |
 | 2026-10-17 | eef5ebc | 2 | 3 | 4 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | REQ (0) | 4.9 |
 | 2026-10-17 | dc188b7 | 4 | 3 | 4 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | REQ (0) | 5.1 |
+| 2026-10-17 | 4bdacf6 | 4 | 4 | 4 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | REQ (0) | 5.2 |
 
-Per-aspect baselines (diff basis for the next incremental review): LOG, ERR, SEC, PAT, CON, CMP, LGG, TSQ, TYP, RDB, REQ @ dc188b7, whole repo.
+Per-aspect baselines (diff basis for the next incremental review): LOG, ERR, SEC, PAT, CON, CMP, LGG, TSQ, TYP, RDB, REQ @ 4bdacf6, whole repo.

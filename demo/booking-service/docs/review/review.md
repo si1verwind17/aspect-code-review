@@ -7,7 +7,7 @@ history. Finding IDs are stable and never reused. Keep the section names and
 order of this template — incremental reviews and future maintainers navigate
 by them.
 
-## Summary — 2026-10-17 @ 4781c64 (full review, 11 aspects, scope: whole repo)
+## Summary — 2026-10-17 @ 66308b9 (incremental review, 11 aspects, scope: diff since 4781c64)
 
 **Worst aspect(s): Logic correctness (LOG) and Requirements alignment (REQ) at 0/10.** Open criticals:
 - LOG-001 C: reschedule never checks the booking's original start, so R27 and the R6 window can be bypassed.
@@ -16,39 +16,37 @@ by them.
 - LOG-004 C: ending a rule with no body uses the UTC date, not the provider's local date.
 - LOG-005 C: reschedule silently drops `resourceRef`.
 - ERR-001 C: a broker outage starves the hold-expiry and auto-complete sweeps (one scheduler thread).
-- SEC-001 C: the internal contacts endpoint serves any booking's PII to any token holder.
-- SEC-002 C: `POST /v1/providers` makes any token holder a provider admin (owner declined the hazard).
 - CON-001 C: an availability edit racing a create stores a booking inside blocked time and leaves it off the R20 conflict list.
 - REQ-001 C: a provider can cancel without the reason R7 requires.
 - REQ-002 C: no metric or alert exists for undispatched events (NF11).
 - REQ-003 C: BookingCompleted does not say whether the system or the provider completed it (UC12).
 - REQ-004 C: there is no erasure, export or retention (NF5).
 
-First review of this repository (no prior ledger): 83 findings recorded. Of these, 48 are critical or major. 39 of those passed a clean-context verifier: none was refuted, and one fact correction moved CON-001 to critical. The other 9 are TSQ majors, each confirmed by a green mutation run.
+This review covered one fix commit, which gates `/internal/**` and `POST /v1/providers` on token scopes. Two findings were resolved: SEC-001 C and SEC-002 C. Security moves from 2 to 4, because its worst open findings are now three majors. Seven minors were found, all on the new gate: SEC-009, ERR-008, CMP-004, LGG-006, TSQ-014, RDB-004 and REQ-017. Both resolutions rest on SEC-009: the IdP must not grant either scope to end users. No new critical or major was proposed, so the verifier had nothing to check. Two clean-context reviewers covered the diff.
 
 | Aspect | Score | Worst open | Open findings |
 |---|---|---|---|
 | Logic correctness (LOG) | **0** | critical | LOG-001 C, LOG-002 C, LOG-003 C, LOG-004 C, LOG-005 C, LOG-006 M, LOG-007 M, LOG-008 M, LOG-009 M, LOG-010 M, LOG-011 M, LOG-012 m, LOG-013 m |
-| Error handling (ERR) | **3** | critical | ERR-001 C, ERR-002 M (w), ERR-003 M, ERR-004 m, ERR-005 m, ERR-006 m, ERR-007 m |
-| Security (SEC) | **2** | critical | SEC-001 C, SEC-002 C, SEC-003 M (w), SEC-004 M (w), SEC-005 M, SEC-006 m, SEC-007 m, SEC-008 m |
+| Error handling (ERR) | **3** | critical | ERR-001 C, ERR-002 M (w), ERR-003 M, ERR-004 m, ERR-005 m, ERR-006 m, ERR-007 m (w), ERR-008 m |
+| Security (SEC) | **4** | major | SEC-003 M (w), SEC-004 M (w), SEC-005 M, SEC-006 m, SEC-007 m, SEC-008 m, SEC-009 m |
 | Code pattern (PAT) | **6** | major | PAT-001 M, PAT-002 m, PAT-003 m, PAT-004 m, PAT-005 m (w), PAT-006 m |
 | Concurrency safety (CON) | **3** | critical | CON-001 C, CON-002 M, CON-003 M, CON-004 M, CON-005 M (w), CON-006 M, CON-007 m |
-| Contract & compatibility (CMP) | **5** | major | CMP-001 M, CMP-002 M, CMP-003 m (w) |
-| Logging (LGG) | **9** | minor | LGG-001 m, LGG-002 m (w), LGG-003 m, LGG-004 m, LGG-005 m |
-| Test quality (TSQ) | **4** | major | TSQ-001 M, TSQ-002 M, TSQ-003 M, TSQ-004 M, TSQ-005 M, TSQ-006 M, TSQ-007 M, TSQ-008 M, TSQ-009 M, TSQ-010 m, TSQ-011 m, TSQ-012 m, TSQ-013 m |
+| Contract & compatibility (CMP) | **5** | major | CMP-001 M, CMP-002 M, CMP-003 m (w), CMP-004 m |
+| Logging (LGG) | **9** | minor | LGG-001 m, LGG-002 m (w), LGG-003 m, LGG-004 m, LGG-005 m, LGG-006 m |
+| Test quality (TSQ) | **4** | major | TSQ-001 M, TSQ-002 M, TSQ-003 M, TSQ-004 M, TSQ-005 M, TSQ-006 M, TSQ-007 M, TSQ-008 M, TSQ-009 M, TSQ-010 m, TSQ-011 m, TSQ-012 m, TSQ-013 m, TSQ-014 m |
 | Type & null safety (TYP) | **9** | minor | TYP-001 m, TYP-002 m (w) |
-| Readability & maintainability (RDB) | **9** | minor | RDB-001 m, RDB-002 m, RDB-003 m |
-| Requirements alignment (REQ) | **0** | critical | REQ-001 C, REQ-002 C, REQ-003 C, REQ-004 C, REQ-005 M, REQ-006 M, REQ-007 M, REQ-008 M, REQ-009 M, REQ-010 M, REQ-011 M, REQ-012 m (w), REQ-013 m, REQ-014 m, REQ-015 m, REQ-016 m |
+| Readability & maintainability (RDB) | **9** | minor | RDB-001 m, RDB-002 m, RDB-003 m, RDB-004 m |
+| Requirements alignment (REQ) | **0** | critical | REQ-001 C, REQ-002 C (w), REQ-003 C, REQ-004 C, REQ-005 M, REQ-006 M, REQ-007 M, REQ-008 M, REQ-009 M, REQ-010 M, REQ-011 M, REQ-012 m (w), REQ-013 m, REQ-014 m, REQ-015 m, REQ-016 m, REQ-017 m |
 
 Rows stay in catalog order (the History table's column order), never sorted
 by score — so any two reviews line up row-for-row. The worst aspects are
 named in the prose above, not by reordering the table.
 
-Average (trend only, never the headline): **4.5**.
+Average (trend only, never the headline): **4.7**.
 
 ## Review scope
 
-Whole repository at 4781c64 (clean tree). The review covered:
+Incremental review at 66308b9 (clean tree): the diff since 4781c64 for all 11 aspects. Five files were touched: `build.gradle.kts`, `api/InternalController.kt`, `core/listing/ListingService.kt`, `sys/SecurityConfig.kt` and the new `sys/SecurityConfigTest.kt`. The base 4781c64 is the service's own repository at the first review. Its tree is the one this repository holds at c51e603, which the diff used. Findings outside the diff are carried forward from the full review at 4781c64, which covered:
 - `src/main/kotlin/`
 - `src/main/resources/` (33 SQL statements and `application.yaml`)
 - `docs/backend-design/ddl/*.sql`, which is the Flyway migration source and therefore code
@@ -72,7 +70,7 @@ bind future reviews.
   - Every multi-statement write is one plpgsql call.
   - There is no ORM, and tests use hand-written fakes.
   - No linter or formatter is configured.
-- **Auth model**: in-code. A JWT resource server with a required issuer; every path except `/actuator/**` needs a token, `/internal/**` included (`sys/SecurityConfig.kt:22-29`). Authorization comes from `provider_admin` membership in the database. No network isolation is committed: "never routed through public ingress" (`InternalController.kt:13`) is a comment only. Any holder of an issuer token is an untrusted caller (domain-context §5).
+- **Auth model** (amended @66308b9): in-code. A JWT resource server with a required issuer; every path except `/actuator/**` needs a token. `/internal/**` also needs scope `booking.contacts.read`, and `POST /v1/providers` needs scope `booking.providers.create` (`sys/SecurityConfig.kt:36-39`). Every other authorization comes from `provider_admin` membership in the database. No network isolation is committed. Any holder of an issuer token is an untrusted caller (domain-context §5). Which tokens carry the two scopes is up to the IdP and is not recorded (SEC-009).
 - **Deployment model**: assumed, never deployed. Basis: owner statement in domain-context §4; there are no manifests.
   - Designed topology: at least 2 `booking-api` and at least 2 `booking-worker` replicas from one image, chosen by profile. The relay and both sweeps run on every worker.
   - Design targets, never measured: about 500 providers, 2,000 resources, 10k bookings/day, 50 req/s search and 10 req/s writes.
@@ -84,7 +82,7 @@ bind future reviews.
   - The schema reaches the database through Flyway at every pod startup, from migrations generated out of `ddl/` (`build.gradle.kts:64-80`).
 - **Tests**: JUnit 5, in three tiers: pure unit tests, hand-faked orchestration tests, and `*IT` tests against real PostgreSQL (Testcontainers, or `BOOKING_TEST_JDBC_URL`).
   - The command `./gradlew test --offline` works here.
-  - Baseline @4781c64: 72 tests, 5 failing. ApplicationContextIT fails 3 times (TSQ-009) and the BookingLifecycleIT relay pair fails twice (TSQ-001).
+  - Baseline @4781c64: 72 tests, 5 failing. At 66308b9 (amended): 77 tests, the same 5 failing. ApplicationContextIT fails 3 times (TSQ-009) and the BookingLifecycleIT relay pair fails twice (TSQ-001).
 - **Exclusions**:
   - `build/`, `.idea/` and the Gradle wrapper
   - the documentation tooling: `docs/backend-design/build-review.mjs`, `package*.json` and `design-review.html` (owner: not a module)
@@ -116,11 +114,11 @@ bind future reviews.
   - I2 (capacity per session): held — `ddl/03-functions.sql:342-345, 589-592`, CHECK at `ddl/01:296`.
   - I3 (one event per committed transition): held — `ddl/01:445`, `ddl/03:421, 510-511`.
   - I4 (no PII in events): held — `ddl/03:171-212` is the only outbox writer.
-  - I5 (absent, not forbidden): violated at `api/InternalController.kt:27-29` (SEC-001).
+  - I5 (absent, not forbidden) (amended @66308b9): no longer reachable by an end-user token; the contacts route needs the service scope (`sys/SecurityConfig.kt:37`). A scope holder still reads any booking, as AQ3 intends.
   - I6 (transitions are rows): held — `ddl/03:437-445`.
-  - Hazard, `POST /v1/providers` self-service: owner declined, filed as SEC-002.
+  - Hazard, `POST /v1/providers` self-service: owner declined; filed as SEC-002, resolved @66308b9.
   - Hazard, gate consumer with no dead-letter: owner declined, filed as ERR-005 (latent).
-  - Not exercised: the internal contacts endpoint has no legitimate caller (SEC-001 reach rests on an untrusted caller); `resource.idp_subject` is read by nothing (REQ-010, SEC-007); the reschedule resource-change plumbing is unused, but the dropped field sits on the exercised reschedule (LOG-005); nothing crosses the Kafka edges (ERR-004/005/006, SEC-008, TYP-001 latent); `AWAITING_PAYMENT` is unreachable.
+  - Not exercised: the internal contacts endpoint has no legitimate caller (SEC-001, resolved @66308b9, rested its reach on an untrusted caller); `resource.idp_subject` is read by nothing (REQ-010, SEC-007); the reschedule resource-change plumbing is unused, but the dropped field sits on the exercised reschedule (LOG-005); nothing crosses the Kafka edges (ERR-004/005/006, SEC-008, TYP-001 latent); `AWAITING_PAYMENT` is unreachable.
 - **External-state journeys**: 11 operations enumerated.
   - Operations: create (including replay), cancel, approve, decline, attendance, reschedule, the expiry sweep, the auto-complete sweep, gate consume, relay publish/mark/record, provider setup writes, and availability rule and exception writes.
   - Empty or problematic cells:
@@ -154,8 +152,8 @@ _None yet._
 ## Open findings
 
 Severity: C = critical, M = major, m = minor; (w) = widespread (counts
-double). All findings open @ 4781c64; finding bodies stay pinned to their
-discovery hash. Aspect sections stay in catalog order (same as the summary
+double). Findings open @ 66308b9. A finding body stays pinned to its
+discovery hash: 4781c64 unless its Status line says `found @<hash>`. Aspect sections stay in catalog order (same as the summary
 table); a `---` rule before each aspect header keeps the section boundary
 visible mid-scroll.
 
@@ -234,7 +232,7 @@ visible mid-scroll.
 
 ---
 
-### Error handling (ERR) — 3/10 · 7 open
+### Error handling (ERR) — 3/10 · 8 open
 
 **ERR-001 · C · isolated — A broker outage starves the hold-expiry and auto-complete sweeps: all three jobs share one scheduler thread**
 - `worker/WorkerSchedules.kt:20-21, 41-42, 47-48`; `application.yaml:7-9` (virtual threads → SimpleAsyncTaskScheduler; its fixed-delay executor has core size 1, per javap of spring-context 7.0.9); `core/outbox/OutboxRelay.kt:28-50`; `worker/KafkaEventPublisher.kt:42-43`
@@ -276,20 +274,15 @@ visible mid-scroll.
 - A repeated reschedule emits a second BookingRescheduled.
 - The rule commits before `conflictsFor`, so a failed read loses the R20 list.
 
+**ERR-008 · m · isolated — Scope denials answer Spring's empty 403, not the service's ErrorResponse**
+- Status: open, found @66308b9
+- `sys/SecurityConfig.kt:37-38`; `api/ApiExceptionHandler.kt` never sees a filter-chain denial.
+- A caller with a valid token but the wrong scope gets no `{code, rule, message}` body. `SecurityConfigTest` asserts the status only.
+- Cross-ref: CMP-004.
+
 ---
 
-### Security (SEC) — 2/10 · 8 open
-
-**SEC-001 · C · isolated — Internal contacts endpoint serves any booking's customer PII to any token holder (I5 violated)**
-- `api/InternalController.kt:27-29` → `core/listing/ListingService.kt:45` → `repo/JdbcListingRepository.kt:59-73` → `sql/listing/booking_contacts.sql:4-12` (WHERE `b.public_ref` only); `sys/SecurityConfig.kt:25-27` (only `authenticated()`)
-- Worksheet: reach any issuer-token holder with a booking ref that is not theirs · residue external (name, email, phone and cancellation reason disclosed to the wrong principal) · signal none → critical
-- Evidence: path variable `bookingRef` → unscoped SELECT. Refs appear in INFO logs, events and provider listings, and are minted from a non-cryptographic PRNG (SEC-004). Amplifier: the returned `customerRef` feeds `onBehalfOfCustomerRef` for a self-made provider (SEC-002). "No legitimate caller" (not exercised) does not bound an untrusted caller.
-- Cross-ref: REQ (R18, NF5).
-
-**SEC-002 · C · isolated — `POST /v1/providers` has no authorization and makes the caller the first admin (owner declined, domain-context §7)**
-- `api/ProviderSetupController.kt:28-47` → `core/management/ProviderSetup.kt:61-66` → `sql/management/insert_provider.sql`, `insert_provider_admin.sql:3-5`
-- Worksheet: reach any issuer-token holder · residue external (provider and provider_admin rows grant PROVIDER capacity: bypass R4 lead time, and book on behalf of any customer whose ref it holds via `BookingService.kt:71-78` / unscoped `customer/find_id_by_ref.sql`) · signal none → critical
-- Cross-ref: ERR-003, REQ (UC1/PD1).
+### Security (SEC) — 4/10 · 7 open
 
 **SEC-003 · M · widespread — Raw PostgreSQL error text, with PL/pgSQL frames and internal ids, returned to clients**
 - `sys/BookingSqlExceptionTranslator.kt:40`; `repo/RuleViolations.kt:17`; `api/BookingOutcomeResponder.kt:83`; RAISE texts with bigint ids at `ddl/03-functions.sql:250, 423, 429, 560`
@@ -313,6 +306,12 @@ visible mid-scroll.
 **SEC-008 · m · isolated — Gate consumer resolves AWAITING_PROVIDER_APPROVAL as PROVIDER from any topic message (latent)**
 - `core/gate/GateResolutionService.kt:47-63` (`actorType = PROVIDER`, `actorSubject = messageId`). Contradicts PD18; no producer exists.
 - Cross-ref: REQ (PD18), TYP-002.
+
+**SEC-009 · m · isolated — The scope gate relies on the IdP withholding both scopes from end-user tokens, and nothing records that obligation**
+- Status: open, found @66308b9
+- `sys/SecurityConfig.kt:37-38, 44-45`; comments that state it as fact: `api/InternalController.kt:13-15`, `core/listing/ListingService.kt:42-43`, `sys/SecurityConfig.kt:19-20`
+- The gate reads the default `scope`/`scp` authorities. "Never an end-user token" holds only if the issuer never grants `booking.contacts.read` or `booking.providers.create` to end users. PD1 (claim mapping) is still open. Latent: there is no deployment.
+- Cross-ref: REQ-017, PD1.
 
 ---
 
@@ -386,7 +385,7 @@ visible mid-scroll.
 
 ---
 
-### Contract & compatibility (CMP) — 5/10 · 3 open
+### Contract & compatibility (CMP) — 5/10 · 4 open
 
 **CMP-001 · M · isolated — No documented working path delivers a schema change to a database already at V1..V4**
 - `build.gradle.kts:64-80` copies only root `ddl/*.sql` and renames four fixed files. Related: README.md:96-99 (the DDL is the "single source of truth"), data-design.md:607 ("numbered directories"), `application.yaml:16-18` (Flyway at every pod startup), and `src/test/.../TestDatabase.kt:41-45` (always `clean(); migrate()`).
@@ -406,9 +405,14 @@ visible mid-scroll.
 **CMP-003 · m · widespread — Error-body drift**
 - Spring Security 401 and 403 responses have no ErrorResponse body. `rule` mixes "shape", "none", "UC1", "UC3", "UC9", "PD7", "section 4.1", "R1/R31" and "R18" (`ApiExceptionHandler.kt:31,44`, `AvailabilityAdminController.kt:79`, `ProviderSetupController.kt:92`, `BookingOutcomeResponder.kt:97`, `AvailabilityController.kt:52`, `BookingDomain.kt:53`).
 
+**CMP-004 · m · isolated — Two routes narrowed to scoped tokens with no contract note**
+- Status: open, found @66308b9
+- `sys/SecurityConfig.kt:37-38`: `GET /internal/**` and `POST /v1/providers` now answer 403 without the scope. There is no consumer, so nothing breaks; AQ8 defers the published contract.
+- Cross-ref: ERR-008.
+
 ---
 
-### Logging (LGG) — 9/10 · 5 open
+### Logging (LGG) — 9/10 · 6 open
 
 **LGG-001 · m · isolated — Relay failure line loses its cause and blames the broker for DB errors**
 - `core/outbox/OutboxRelay.kt:33-48`: a TimeoutException renders `reason=null`, and the exception is not passed to the logger. A `markDispatched` DB failure is logged as "event dispatch failed".
@@ -425,9 +429,13 @@ visible mid-scroll.
 **LGG-005 · m · isolated — Worker log lines have no correlation id**
 - `sys/CorrelationIdFilter.kt` is HTTP-only; pattern at `application.yaml:73`. Relay, sweep and gate lines print `[booking-service,]` (NF7).
 
+**LGG-006 · m · isolated — A refused contacts or onboarding call leaves no service log line**
+- Status: open, found @66308b9
+- `sys/SecurityConfig.kt:37-38`. No AccessDeniedHandler or authorization-event listener is configured; denials appear only at Spring Security DEBUG. No documented process reads such a line.
+
 ---
 
-### Test quality (TSQ) — 4/10 · 13 open
+### Test quality (TSQ) — 4/10 · 14 open
 
 Every TSQ major below was confirmed by applying its named mutation to production code in a scratch clone and running `./gradlew test --offline`. "Green" means no failures beyond the 5 baseline failures.
 
@@ -480,6 +488,10 @@ Every TSQ major below was confirmed by applying its named mutation to production
 - TSQ · M · fn_auto_complete and attendance (BK009) never executed by a test · `ddl/03-functions.sql:660-682, 483-486` — named mutation not run; a green run of e.g. `fn_auto_complete` → no-op would confirm.
 - TSQ · M · I4 (no PII in event payload) not asserted · `BookingLifecycleIT.kt:186` — mutation (add `email` to `fn_emit_event` payload) not run.
 
+**TSQ-014 · m · isolated — Route rules are tested against stub controllers that restate the paths**
+- Status: open, found @66308b9
+- `src/test/kotlin/dev/booking/sys/SecurityConfigTest.kt:41-46` restates `/v1/providers` and the contacts route instead of using `ProviderSetupController.kt:28` and `InternalController.kt:29`. Moving the real contacts route outside `/internal/` leaves the suite green. `jwt()` injects authorities directly, so the scope-claim conversion is not exercised. The real wiring is covered only by ApplicationContextIT, which is red (TSQ-009).
+
 ---
 
 ### Type & null safety (TYP) — 9/10 · 2 open
@@ -494,7 +506,7 @@ Every TSQ major below was confirmed by applying its named mutation to production
 
 ---
 
-### Readability & maintainability (RDB) — 9/10 · 3 open
+### Readability & maintainability (RDB) — 9/10 · 4 open
 
 **RDB-001 · m · isolated — Hard-coded lookup ids in plpgsql**
 - `ddl/03-functions.sql:67, 72, 261, 357, 360, 473, 502-504, 604, 606, 650, 676, 678`. Drift risk is settled by `04-seed-lookups.sql:1-2`; only readability remains.
@@ -505,9 +517,13 @@ Every TSQ major below was confirmed by applying its named mutation to production
 **RDB-003 · m · isolated — Default values stated twice**
 - DDL defaults (`ddl/01:96-100, 161-164`) restated in `sql/management/insert_provider.sql:9-13` and `insert_service.sql:6-9`; `Page.first` (`core/listing/Listing.kt:43`) restated in `api/ListingController.kt:27-28, 41-42`.
 
+**RDB-004 · m · isolated — The `SCOPE_` authority prefix is restated in main and in the test**
+- Status: open, found @66308b9
+- `sys/SecurityConfig.kt:37-38`, `src/test/kotlin/dev/booking/sys/SecurityConfigTest.kt:57`: an unnamed convention written in two places.
+
 ---
 
-### Requirements alignment (REQ) — 0/10 · 16 open
+### Requirements alignment (REQ) — 0/10 · 17 open
 
 **REQ-001 · C · isolated — Provider cancellation accepted without a reason (R7, UC7)**
 - `api/BookingDtos.kt:35`; `api/BookingController.kt:69-76`; `core/booking/BookingLifecycleService.kt:51-56`; `ddl/03-functions.sql:468-481, 500-516`; the column comment at `ddl/01:397` claims "mandatory … (R7)" but nothing enforces it
@@ -569,6 +585,12 @@ Every TSQ major below was confirmed by applying its named mutation to production
 **REQ-016 · m · isolated — Unrequested `slotStepMinutes` (default 15) shapes offered starts**
 - `api/BookingDtos.kt:150`; `sql/management/insert_service.sql:9`; `ddl/03-functions.sql:128`.
 
+**REQ-017 · m · isolated — The design documents and comments still describe the old access rules, and the scope names appear nowhere else**
+- Status: open, found @66308b9
+- `core/management/ProviderSetup.kt:46-52` (the creating subject becomes the first admin; nothing says a scope is required); domain-context §6 I5 and §7 hazards ("not enforced", "no authorization check"); `docs/backend-design/architecture-design.md:256` (service-to-service auth).
+- An operator reading the documents cannot learn which scopes to issue.
+- Cross-ref: SEC-009.
+
 ## Credited as intentional (recorded to prevent re-litigation)
 
 - Outbox at-least-once delivery: an unlocked claim, a republish after a lost ack or a timed-out send, and duplicates across relays. Evidence: `claim_due_events.sql:6-10` and domain-context §7 ("consumers must dedupe on eventId"). This covers duplicates only, not reordering (LOG-003).
@@ -586,12 +608,14 @@ resolved @<hash>`; full bodies live in this document's git history. A
 reintroduced defect reopens its ID here (moves back to Open findings with
 `reopened @<hash>`), never gets a new one.
 
-_None yet._
+- SEC-001 · C · Internal contacts endpoint serves any booking's customer PII to any token holder (I5 violated) · `api/InternalController.kt`, `core/listing/ListingService.kt`, `repo/JdbcListingRepository.kt` · resolved @66308b9
+- SEC-002 · C · `POST /v1/providers` has no authorization and makes the caller the first admin (owner declined, domain-context §7) · `api/ProviderSetupController.kt`, `core/management/ProviderSetup.kt`, `sql/management/insert_provider.sql` · resolved @66308b9
 
 ## History
 
 | Date | Hash | LOG | ERR | SEC | PAT | CON | CMP | LGG | TSQ | TYP | RDB | REQ | Worst | Avg |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-10-17 | 4781c64 | 0 | 3 | 2 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | LOG, REQ (0) | 4.5 |
+| 2026-10-17 | 66308b9 | 0 | 3 | 4 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | LOG, REQ (0) | 4.7 |
 
-Per-aspect baselines (diff basis for the next incremental review): LOG, ERR, SEC, PAT, CON, CMP, LGG, TSQ, TYP, RDB, REQ @ 4781c64, whole repo.
+Per-aspect baselines (diff basis for the next incremental review): LOG, ERR, SEC, PAT, CON, CMP, LGG, TSQ, TYP, RDB, REQ @ 66308b9, whole repo.

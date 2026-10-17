@@ -1,9 +1,9 @@
 <!doctype html>
 <!-- generated from review.md on 2026-10-17 — do not edit; regenerate with render_review.mjs instead. Agents must consume the markdown, not this page. -->
 <html lang="en"><head>
-<meta name="source-sha256" content="ee3e1a59bbaa929c3b68ce694719459970c806e82ad2f87557f92d4e039269d9"><meta charset="utf-8">
+<meta name="source-sha256" content="4518970ecab03ceb75a81f055766226212b2fde6140fe6827b860daf865f089e"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>booking-service — code review ledger</title>
+<title>aspect-code-review — code review ledger</title>
 <style>
 :root { color-scheme: light;
   --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e; --ink-muted:#898781;
@@ -56,6 +56,12 @@ figcaption { color:var(--ink-muted); font-size:12.5px; margin-top:8px; }
   font-size:12px; color:var(--ink-muted); font-variant-numeric:tabular-nums; }
 #hist-label { font-size:13px; font-weight:600; color:var(--ink-2); text-align:center; }
 svg .row.nohist { opacity:.35; }
+svg .delta.up { fill:#0ca30c; } svg .delta.down { fill:#d03b3b; }
+#hist-changes { margin:12px 0 0; font-size:13px; color:var(--ink-2); }
+#hist-changes .chg { display:grid; grid-template-columns:7.5em minmax(0,1fr); gap:2px 10px; margin:4px 0; }
+#hist-changes .chg b { color:var(--ink); font-weight:600; }
+#hist-changes ul { margin:0; padding:0; list-style:none; } #hist-changes li { margin:1px 0; }
+#hist-changes .none { color:var(--ink-muted); }
 svg .row .bar, svg .row .score, svg .row .bandchip { transition:opacity .1s; }
 #tooltip { position:fixed; display:none; z-index:10; background:var(--surface); color:var(--ink);
   border:1px solid var(--ring); border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,.18);
@@ -65,7 +71,7 @@ svg .row .bar, svg .row .score, svg .row .bandchip { transition:opacity .1s; }
 footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border-top:1px solid var(--grid); padding-top:12px; }
 </style></head><body>
 <div class="layout">
-<nav class="toc"><p class="toc-title">booking-service</p>
+<nav class="toc"><p class="toc-title">aspect-code-review</p>
 <a href="#scores">Score chart</a>
 <a href="#summary-2026-10">Summary</a>
 <a href="#review-scope">Review scope</a>
@@ -77,7 +83,7 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <a href="#history">History</a>
 <a style="padding-left:22px" href="#aspect-LOG">Logic correctness — 0</a>
 <a style="padding-left:22px" href="#aspect-ERR">Error handling — 3</a>
-<a style="padding-left:22px" href="#aspect-SEC">Security — 2</a>
+<a style="padding-left:22px" href="#aspect-SEC">Security — 4</a>
 <a style="padding-left:22px" href="#aspect-PAT">Code pattern — 6</a>
 <a style="padding-left:22px" href="#aspect-CON">Concurrency safety — 3</a>
 <a style="padding-left:22px" href="#aspect-CMP">Contract &amp; compatibility — 5</a>
@@ -89,16 +95,16 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 </nav>
 <main>
 <header class="page">
-  <h1>Code Review Ledger — booking-service</h1>
-  <div class="meta">Source: <code>review.md</code> · review: 2026-10-17 @ 4781c64 (full review, 11 aspects, scope: whole repo) · page generated 2026-10-17</div>
+  <h1>Code Review Ledger — aspect-code-review</h1>
+  <div class="meta">Source: <code>review.md</code> · review: 2026-10-17 @ 66308b9 (incremental review, 11 aspects, scope: diff since 4781c64) · page generated 2026-10-17</div>
 </header>
 
 <section class="panel" id="gate">
   <h2 style="margin-top:0">Gate summary</h2>
   <div class="gate">
-    <span class="chip">✕ do-not-ship aspects: <b>LOG, ERR, SEC, CON, REQ</b></span>
-    <span class="chip">open criticals: <b>LOG-001, LOG-002, LOG-003, LOG-004, LOG-005, ERR-001, SEC-001, SEC-002, CON-001, REQ-001, REQ-002, REQ-003, REQ-004</b></span>
-    <span class="chip">average (trend only): <b>4.5</b></span>
+    <span class="chip">✕ do-not-ship aspects: <b>LOG, ERR, CON, REQ</b></span>
+    <span class="chip">open criticals: <b>LOG-001, LOG-002, LOG-003, LOG-004, LOG-005, ERR-001, CON-001, REQ-001, REQ-002, REQ-003, REQ-004</b></span>
+    <span class="chip">average (trend only): <b>4.7</b></span>
   </div>
   <p style="color:var(--ink-2);font-size:13.5px;margin-bottom:0">The verdict is per-aspect, never the average. Details in the summary and per-aspect findings below.</p>
 </section>
@@ -131,121 +137,123 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <rect x="0" y="34" width="904" height="28" fill="transparent" class="hit"/>
 <text x="190" y="52" text-anchor="end" font-size="12.5" class="ink-secondary">Logic correctness <tspan class="ink-muted" font-size="10.5">LOG</tspan></text>
 <path d="M200,42 h0 a0,0 0 0 1 0,0 v12 a0,0 0 0 1 0,0 h0 z" fill="#d03b3b" class="bar"/>
-<text x="207" y="52" font-size="12" font-weight="600" class="ink-primary num score">0</text>
+<text x="207" y="52" font-size="12" font-weight="600" class="ink-primary num score">0<tspan class="delta" font-weight="500" font-size="10.5" dx="5"></tspan></text>
 <text x="776" y="52" font-size="11" class="ink-secondary bandchip">✕ do not ship</text>
 </g>
-<g class="row" data-abbr="ERR" data-cy="76" data-name="Error handling" data-score="3" data-worst="critical" data-findings="ERR-001 C, ERR-002 M (w), ERR-003 M, ERR-004 m, ERR-005 m, ERR-006 m, ERR-007 m" data-band="✕ do not ship">
+<g class="row" data-abbr="ERR" data-cy="76" data-name="Error handling" data-score="3" data-worst="critical" data-findings="ERR-001 C, ERR-002 M (w), ERR-003 M, ERR-004 m, ERR-005 m, ERR-006 m, ERR-007 m (w), ERR-008 m" data-band="✕ do not ship">
 <rect x="0" y="62" width="904" height="28" fill="transparent" class="hit"/>
 <text x="190" y="80" text-anchor="end" font-size="12.5" class="ink-secondary">Error handling <tspan class="ink-muted" font-size="10.5">ERR</tspan></text>
 <path d="M200,70 h152 a4,4 0 0 1 4,4 v4 a4,4 0 0 1 -4,4 h-152 z" fill="#d03b3b" class="bar"/>
-<text x="363" y="80" font-size="12" font-weight="600" class="ink-primary num score">3</text>
+<text x="363" y="80" font-size="12" font-weight="600" class="ink-primary num score">3<tspan class="delta" font-weight="500" font-size="10.5" dx="5"></tspan></text>
 <text x="776" y="80" font-size="11" class="ink-secondary bandchip">✕ do not ship</text>
 </g>
-<g class="row" data-abbr="SEC" data-cy="104" data-name="Security" data-score="2" data-worst="critical" data-findings="SEC-001 C, SEC-002 C, SEC-003 M (w), SEC-004 M (w), SEC-005 M, SEC-006 m, SEC-007 m, SEC-008 m" data-band="✕ do not ship">
+<g class="row" data-abbr="SEC" data-cy="104" data-name="Security" data-score="4" data-worst="major" data-findings="SEC-003 M (w), SEC-004 M (w), SEC-005 M, SEC-006 m, SEC-007 m, SEC-008 m, SEC-009 m" data-band="⚠ schedule fixes">
 <rect x="0" y="90" width="904" height="28" fill="transparent" class="hit"/>
 <text x="190" y="108" text-anchor="end" font-size="12.5" class="ink-secondary">Security <tspan class="ink-muted" font-size="10.5">SEC</tspan></text>
-<path d="M200,98 h100 a4,4 0 0 1 4,4 v4 a4,4 0 0 1 -4,4 h-100 z" fill="#d03b3b" class="bar"/>
-<text x="311" y="108" font-size="12" font-weight="600" class="ink-primary num score">2</text>
-<text x="776" y="108" font-size="11" class="ink-secondary bandchip">✕ do not ship</text>
+<path d="M200,98 h204 a4,4 0 0 1 4,4 v4 a4,4 0 0 1 -4,4 h-204 z" fill="#fab219" class="bar"/>
+<text x="415" y="108" font-size="12" font-weight="600" class="ink-primary num score">4<tspan class="delta" font-weight="500" font-size="10.5" dx="5"></tspan></text>
+<text x="776" y="108" font-size="11" class="ink-secondary bandchip">⚠ schedule fixes</text>
 </g>
 <g class="row" data-abbr="PAT" data-cy="132" data-name="Code pattern" data-score="6" data-worst="major" data-findings="PAT-001 M, PAT-002 m, PAT-003 m, PAT-004 m, PAT-005 m (w), PAT-006 m" data-band="⚠ schedule fixes">
 <rect x="0" y="118" width="904" height="28" fill="transparent" class="hit"/>
 <text x="190" y="136" text-anchor="end" font-size="12.5" class="ink-secondary">Code pattern <tspan class="ink-muted" font-size="10.5">PAT</tspan></text>
 <path d="M200,126 h308 a4,4 0 0 1 4,4 v4 a4,4 0 0 1 -4,4 h-308 z" fill="#fab219" class="bar"/>
-<text x="519" y="136" font-size="12" font-weight="600" class="ink-primary num score">6</text>
+<text x="519" y="136" font-size="12" font-weight="600" class="ink-primary num score">6<tspan class="delta" font-weight="500" font-size="10.5" dx="5"></tspan></text>
 <text x="776" y="136" font-size="11" class="ink-secondary bandchip">⚠ schedule fixes</text>
 </g>
 <g class="row" data-abbr="CON" data-cy="160" data-name="Concurrency safety" data-score="3" data-worst="critical" data-findings="CON-001 C, CON-002 M, CON-003 M, CON-004 M, CON-005 M (w), CON-006 M, CON-007 m" data-band="✕ do not ship">
 <rect x="0" y="146" width="904" height="28" fill="transparent" class="hit"/>
 <text x="190" y="164" text-anchor="end" font-size="12.5" class="ink-secondary">Concurrency safety <tspan class="ink-muted" font-size="10.5">CON</tspan></text>
 <path d="M200,154 h152 a4,4 0 0 1 4,4 v4 a4,4 0 0 1 -4,4 h-152 z" fill="#d03b3b" class="bar"/>
-<text x="363" y="164" font-size="12" font-weight="600" class="ink-primary num score">3</text>
+<text x="363" y="164" font-size="12" font-weight="600" class="ink-primary num score">3<tspan class="delta" font-weight="500" font-size="10.5" dx="5"></tspan></text>
 <text x="776" y="164" font-size="11" class="ink-secondary bandchip">✕ do not ship</text>
 </g>
-<g class="row" data-abbr="CMP" data-cy="188" data-name="Contract &amp; compatibility" data-score="5" data-worst="major" data-findings="CMP-001 M, CMP-002 M, CMP-003 m (w)" data-band="⚠ schedule fixes">
+<g class="row" data-abbr="CMP" data-cy="188" data-name="Contract &amp; compatibility" data-score="5" data-worst="major" data-findings="CMP-001 M, CMP-002 M, CMP-003 m (w), CMP-004 m" data-band="⚠ schedule fixes">
 <rect x="0" y="174" width="904" height="28" fill="transparent" class="hit"/>
 <text x="190" y="192" text-anchor="end" font-size="12.5" class="ink-secondary">Contract &amp; compatibility <tspan class="ink-muted" font-size="10.5">CMP</tspan></text>
 <path d="M200,182 h256 a4,4 0 0 1 4,4 v4 a4,4 0 0 1 -4,4 h-256 z" fill="#fab219" class="bar"/>
-<text x="467" y="192" font-size="12" font-weight="600" class="ink-primary num score">5</text>
+<text x="467" y="192" font-size="12" font-weight="600" class="ink-primary num score">5<tspan class="delta" font-weight="500" font-size="10.5" dx="5"></tspan></text>
 <text x="776" y="192" font-size="11" class="ink-secondary bandchip">⚠ schedule fixes</text>
 </g>
-<g class="row" data-abbr="LGG" data-cy="216" data-name="Logging" data-score="9" data-worst="minor" data-findings="LGG-001 m, LGG-002 m (w), LGG-003 m, LGG-004 m, LGG-005 m" data-band="✓ ship">
+<g class="row" data-abbr="LGG" data-cy="216" data-name="Logging" data-score="9" data-worst="minor" data-findings="LGG-001 m, LGG-002 m (w), LGG-003 m, LGG-004 m, LGG-005 m, LGG-006 m" data-band="✓ ship">
 <rect x="0" y="202" width="904" height="28" fill="transparent" class="hit"/>
 <text x="190" y="220" text-anchor="end" font-size="12.5" class="ink-secondary">Logging <tspan class="ink-muted" font-size="10.5">LGG</tspan></text>
 <path d="M200,210 h464 a4,4 0 0 1 4,4 v4 a4,4 0 0 1 -4,4 h-464 z" fill="#0ca30c" class="bar"/>
-<text x="675" y="220" font-size="12" font-weight="600" class="ink-primary num score">9</text>
+<text x="675" y="220" font-size="12" font-weight="600" class="ink-primary num score">9<tspan class="delta" font-weight="500" font-size="10.5" dx="5"></tspan></text>
 <text x="776" y="220" font-size="11" class="ink-secondary bandchip">✓ ship</text>
 </g>
-<g class="row" data-abbr="TSQ" data-cy="244" data-name="Test quality" data-score="4" data-worst="major" data-findings="TSQ-001 M, TSQ-002 M, TSQ-003 M, TSQ-004 M, TSQ-005 M, TSQ-006 M, TSQ-007 M, TSQ-008 M, TSQ-009 M, TSQ-010 m, TSQ-011 m, TSQ-012 m, TSQ-013 m" data-band="⚠ schedule fixes">
+<g class="row" data-abbr="TSQ" data-cy="244" data-name="Test quality" data-score="4" data-worst="major" data-findings="TSQ-001 M, TSQ-002 M, TSQ-003 M, TSQ-004 M, TSQ-005 M, TSQ-006 M, TSQ-007 M, TSQ-008 M, TSQ-009 M, TSQ-010 m, TSQ-011 m, TSQ-012 m, TSQ-013 m, TSQ-014 m" data-band="⚠ schedule fixes">
 <rect x="0" y="230" width="904" height="28" fill="transparent" class="hit"/>
 <text x="190" y="248" text-anchor="end" font-size="12.5" class="ink-secondary">Test quality <tspan class="ink-muted" font-size="10.5">TSQ</tspan></text>
 <path d="M200,238 h204 a4,4 0 0 1 4,4 v4 a4,4 0 0 1 -4,4 h-204 z" fill="#fab219" class="bar"/>
-<text x="415" y="248" font-size="12" font-weight="600" class="ink-primary num score">4</text>
+<text x="415" y="248" font-size="12" font-weight="600" class="ink-primary num score">4<tspan class="delta" font-weight="500" font-size="10.5" dx="5"></tspan></text>
 <text x="776" y="248" font-size="11" class="ink-secondary bandchip">⚠ schedule fixes</text>
 </g>
 <g class="row" data-abbr="TYP" data-cy="272" data-name="Type &amp; null safety" data-score="9" data-worst="minor" data-findings="TYP-001 m, TYP-002 m (w)" data-band="✓ ship">
 <rect x="0" y="258" width="904" height="28" fill="transparent" class="hit"/>
 <text x="190" y="276" text-anchor="end" font-size="12.5" class="ink-secondary">Type &amp; null safety <tspan class="ink-muted" font-size="10.5">TYP</tspan></text>
 <path d="M200,266 h464 a4,4 0 0 1 4,4 v4 a4,4 0 0 1 -4,4 h-464 z" fill="#0ca30c" class="bar"/>
-<text x="675" y="276" font-size="12" font-weight="600" class="ink-primary num score">9</text>
+<text x="675" y="276" font-size="12" font-weight="600" class="ink-primary num score">9<tspan class="delta" font-weight="500" font-size="10.5" dx="5"></tspan></text>
 <text x="776" y="276" font-size="11" class="ink-secondary bandchip">✓ ship</text>
 </g>
-<g class="row" data-abbr="RDB" data-cy="300" data-name="Readability &amp; maintainability" data-score="9" data-worst="minor" data-findings="RDB-001 m, RDB-002 m, RDB-003 m" data-band="✓ ship">
+<g class="row" data-abbr="RDB" data-cy="300" data-name="Readability &amp; maintainability" data-score="9" data-worst="minor" data-findings="RDB-001 m, RDB-002 m, RDB-003 m, RDB-004 m" data-band="✓ ship">
 <rect x="0" y="286" width="904" height="28" fill="transparent" class="hit"/>
 <text x="190" y="304" text-anchor="end" font-size="12.5" class="ink-secondary">Readability &amp; maintainability <tspan class="ink-muted" font-size="10.5">RDB</tspan></text>
 <path d="M200,294 h464 a4,4 0 0 1 4,4 v4 a4,4 0 0 1 -4,4 h-464 z" fill="#0ca30c" class="bar"/>
-<text x="675" y="304" font-size="12" font-weight="600" class="ink-primary num score">9</text>
+<text x="675" y="304" font-size="12" font-weight="600" class="ink-primary num score">9<tspan class="delta" font-weight="500" font-size="10.5" dx="5"></tspan></text>
 <text x="776" y="304" font-size="11" class="ink-secondary bandchip">✓ ship</text>
 </g>
-<g class="row" data-abbr="REQ" data-cy="328" data-name="Requirements alignment" data-score="0" data-worst="critical" data-findings="REQ-001 C, REQ-002 C, REQ-003 C, REQ-004 C, REQ-005 M, REQ-006 M, REQ-007 M, REQ-008 M, REQ-009 M, REQ-010 M, REQ-011 M, REQ-012 m (w), REQ-013 m, REQ-014 m, REQ-015 m, REQ-016 m" data-band="✕ do not ship">
+<g class="row" data-abbr="REQ" data-cy="328" data-name="Requirements alignment" data-score="0" data-worst="critical" data-findings="REQ-001 C, REQ-002 C (w), REQ-003 C, REQ-004 C, REQ-005 M, REQ-006 M, REQ-007 M, REQ-008 M, REQ-009 M, REQ-010 M, REQ-011 M, REQ-012 m (w), REQ-013 m, REQ-014 m, REQ-015 m, REQ-016 m, REQ-017 m" data-band="✕ do not ship">
 <rect x="0" y="314" width="904" height="28" fill="transparent" class="hit"/>
 <text x="190" y="332" text-anchor="end" font-size="12.5" class="ink-secondary">Requirements alignment <tspan class="ink-muted" font-size="10.5">REQ</tspan></text>
 <path d="M200,322 h0 a0,0 0 0 1 0,0 v12 a0,0 0 0 1 0,0 h0 z" fill="#d03b3b" class="bar"/>
-<text x="207" y="332" font-size="12" font-weight="600" class="ink-primary num score">0</text>
+<text x="207" y="332" font-size="12" font-weight="600" class="ink-primary num score">0<tspan class="delta" font-weight="500" font-size="10.5" dx="5"></tspan></text>
 <text x="776" y="332" font-size="11" class="ink-secondary bandchip">✕ do not ship</text>
 </g>
 </svg>
-  
-  <figcaption>Aspects in fixed catalog order (comparable across reviews). Bands: ≥8 ship · 4–7 schedule fixes · ≤3 do not ship. Exact values and finding IDs in the summary table below; hover a row for its open findings.</figcaption>
+  <div class="timeline">
+    <input type="range" id="histrange" min="0" max="1" step="1" value="1" aria-label="Review history position (2 reviews, latest selected)">
+    <div class="timeline-meta"><span>2026-10-17</span><span id="hist-label"></span><span>2026-10-17</span></div>
+  </div>
+  <div id="hist-changes" aria-live="polite"></div>
+  <figcaption>Aspects in fixed catalog order (comparable across reviews). Bands: ≥8 ship · 4–7 schedule fixes · ≤3 do not ship. Exact values and finding IDs in the summary table below; hover a row for its open findings. Drag the timeline to replay earlier reviews: each step shows the score change against the review before it and the findings that review resolved, found or reopened.</figcaption>
   </figure>
 </section>
 
 <section class="card">
 <p>Method: aspect-scored review — severity sets the band, count refines within it; scores derive from open findings by fixed arithmetic. This document is the persistent ledger: scope, assumptions, overrides, open findings, archive, history. Finding IDs are stable and never reused. Keep the section names and order of this template — incremental reviews and future maintainers navigate by them.</p>
-<h3 id="summary-2026-10">Summary — 2026-10-17 @ 4781c64 (full review, 11 aspects, scope: whole repo)</h3>
+<h3 id="summary-2026-10">Summary — 2026-10-17 @ 66308b9 (incremental review, 11 aspects, scope: diff since 4781c64)</h3>
 <p><strong>Worst aspect(s): Logic correctness (LOG) and Requirements alignment (REQ) at 0/10.</strong> Open criticals:</p>
-<ul><li><a class="xref" href="#LOG-001">LOG-001</a> C: reschedule never checks the booking's original start, so R27 and the R6 window can be bypassed.</li>
-<li><a class="xref" href="#LOG-002">LOG-002</a> C: rescheduling a HELD booking renews its hold deadline.</li>
-<li><a class="xref" href="#LOG-003">LOG-003</a> C: the outbox claim publishes event N+1 while N is in backoff.</li>
-<li><a class="xref" href="#LOG-004">LOG-004</a> C: ending a rule with no body uses the UTC date, not the provider's local date.</li>
-<li><a class="xref" href="#LOG-005">LOG-005</a> C: reschedule silently drops <code>resourceRef</code>.</li>
-<li><a class="xref" href="#ERR-001">ERR-001</a> C: a broker outage starves the hold-expiry and auto-complete sweeps (one scheduler thread).</li>
-<li><a class="xref" href="#SEC-001">SEC-001</a> C: the internal contacts endpoint serves any booking's PII to any token holder.</li>
-<li><a class="xref" href="#SEC-002">SEC-002</a> C: <code>POST /v1/providers</code> makes any token holder a provider admin (owner declined the hazard).</li>
-<li><a class="xref" href="#CON-001">CON-001</a> C: an availability edit racing a create stores a booking inside blocked time and leaves it off the R20 conflict list.</li>
-<li><a class="xref" href="#REQ-001">REQ-001</a> C: a provider can cancel without the reason R7 requires.</li>
-<li><a class="xref" href="#REQ-002">REQ-002</a> C: no metric or alert exists for undispatched events (NF11).</li>
-<li><a class="xref" href="#REQ-003">REQ-003</a> C: BookingCompleted does not say whether the system or the provider completed it (UC12).</li>
-<li><a class="xref" href="#REQ-004">REQ-004</a> C: there is no erasure, export or retention (NF5).</li></ul>
-<p>First review of this repository (no prior ledger): 83 findings recorded. Of these, 48 are critical or major. 39 of those passed a clean-context verifier: none was refuted, and one fact correction moved <a class="xref" href="#CON-001">CON-001</a> to critical. The other 9 are TSQ majors, each confirmed by a green mutation run.</p>
+<ul><li id="LOG-001"><a class="xref" href="#LOG-001">LOG-001</a> C: reschedule never checks the booking's original start, so R27 and the R6 window can be bypassed.</li>
+<li id="LOG-002"><a class="xref" href="#LOG-002">LOG-002</a> C: rescheduling a HELD booking renews its hold deadline.</li>
+<li id="LOG-003"><a class="xref" href="#LOG-003">LOG-003</a> C: the outbox claim publishes event N+1 while N is in backoff.</li>
+<li id="LOG-004"><a class="xref" href="#LOG-004">LOG-004</a> C: ending a rule with no body uses the UTC date, not the provider's local date.</li>
+<li id="LOG-005"><a class="xref" href="#LOG-005">LOG-005</a> C: reschedule silently drops <code>resourceRef</code>.</li>
+<li id="ERR-001"><a class="xref" href="#ERR-001">ERR-001</a> C: a broker outage starves the hold-expiry and auto-complete sweeps (one scheduler thread).</li>
+<li id="CON-001"><a class="xref" href="#CON-001">CON-001</a> C: an availability edit racing a create stores a booking inside blocked time and leaves it off the R20 conflict list.</li>
+<li id="REQ-001"><a class="xref" href="#REQ-001">REQ-001</a> C: a provider can cancel without the reason R7 requires.</li>
+<li id="REQ-002"><a class="xref" href="#REQ-002">REQ-002</a> C: no metric or alert exists for undispatched events (NF11).</li>
+<li id="REQ-003"><a class="xref" href="#REQ-003">REQ-003</a> C: BookingCompleted does not say whether the system or the provider completed it (UC12).</li>
+<li id="REQ-004"><a class="xref" href="#REQ-004">REQ-004</a> C: there is no erasure, export or retention (NF5).</li></ul>
+<p>This review covered one fix commit, which gates <code>/internal/**</code> and <code>POST /v1/providers</code> on token scopes. Two findings were resolved: <a class="xref" href="#SEC-001">SEC-001</a> C and <a class="xref" href="#SEC-002">SEC-002</a> C. Security moves from 2 to 4, because its worst open findings are now three majors. Seven minors were found, all on the new gate: <a class="xref" href="#SEC-009">SEC-009</a>, <a class="xref" href="#ERR-008">ERR-008</a>, <a class="xref" href="#CMP-004">CMP-004</a>, <a class="xref" href="#LGG-006">LGG-006</a>, <a class="xref" href="#TSQ-014">TSQ-014</a>, <a class="xref" href="#RDB-004">RDB-004</a> and <a class="xref" href="#REQ-017">REQ-017</a>. Both resolutions rest on <a class="xref" href="#SEC-009">SEC-009</a>: the IdP must not grant either scope to end users. No new critical or major was proposed, so the verifier had nothing to check. Two clean-context reviewers covered the diff.</p>
 <div class="tablewrap"><table>
 <thead><tr><th>Aspect</th><th>Score</th><th>Worst open</th><th>Open findings</th></tr></thead>
 <tbody><tr><td>Logic correctness (LOG)</td><td><strong>0</strong></td><td>critical</td><td><a class="xref" href="#LOG-001">LOG-001</a> C, <a class="xref" href="#LOG-002">LOG-002</a> C, <a class="xref" href="#LOG-003">LOG-003</a> C, <a class="xref" href="#LOG-004">LOG-004</a> C, <a class="xref" href="#LOG-005">LOG-005</a> C, <a class="xref" href="#LOG-006">LOG-006</a> M, <a class="xref" href="#LOG-007">LOG-007</a> M, <a class="xref" href="#LOG-008">LOG-008</a> M, <a class="xref" href="#LOG-009">LOG-009</a> M, <a class="xref" href="#LOG-010">LOG-010</a> M, <a class="xref" href="#LOG-011">LOG-011</a> M, <a class="xref" href="#LOG-012">LOG-012</a> m, <a class="xref" href="#LOG-013">LOG-013</a> m</td></tr>
-<tr><td>Error handling (ERR)</td><td><strong>3</strong></td><td>critical</td><td><a class="xref" href="#ERR-001">ERR-001</a> C, <a class="xref" href="#ERR-002">ERR-002</a> M (w), <a class="xref" href="#ERR-003">ERR-003</a> M, <a class="xref" href="#ERR-004">ERR-004</a> m, <a class="xref" href="#ERR-005">ERR-005</a> m, <a class="xref" href="#ERR-006">ERR-006</a> m, <a class="xref" href="#ERR-007">ERR-007</a> m</td></tr>
-<tr><td>Security (SEC)</td><td><strong>2</strong></td><td>critical</td><td><a class="xref" href="#SEC-001">SEC-001</a> C, <a class="xref" href="#SEC-002">SEC-002</a> C, <a class="xref" href="#SEC-003">SEC-003</a> M (w), <a class="xref" href="#SEC-004">SEC-004</a> M (w), <a class="xref" href="#SEC-005">SEC-005</a> M, <a class="xref" href="#SEC-006">SEC-006</a> m, <a class="xref" href="#SEC-007">SEC-007</a> m, <a class="xref" href="#SEC-008">SEC-008</a> m</td></tr>
+<tr><td>Error handling (ERR)</td><td><strong>3</strong></td><td>critical</td><td><a class="xref" href="#ERR-001">ERR-001</a> C, <a class="xref" href="#ERR-002">ERR-002</a> M (w), <a class="xref" href="#ERR-003">ERR-003</a> M, <a class="xref" href="#ERR-004">ERR-004</a> m, <a class="xref" href="#ERR-005">ERR-005</a> m, <a class="xref" href="#ERR-006">ERR-006</a> m, <a class="xref" href="#ERR-007">ERR-007</a> m (w), <a class="xref" href="#ERR-008">ERR-008</a> m</td></tr>
+<tr><td>Security (SEC)</td><td><strong>4</strong></td><td>major</td><td><a class="xref" href="#SEC-003">SEC-003</a> M (w), <a class="xref" href="#SEC-004">SEC-004</a> M (w), <a class="xref" href="#SEC-005">SEC-005</a> M, <a class="xref" href="#SEC-006">SEC-006</a> m, <a class="xref" href="#SEC-007">SEC-007</a> m, <a class="xref" href="#SEC-008">SEC-008</a> m, <a class="xref" href="#SEC-009">SEC-009</a> m</td></tr>
 <tr><td>Code pattern (PAT)</td><td><strong>6</strong></td><td>major</td><td><a class="xref" href="#PAT-001">PAT-001</a> M, <a class="xref" href="#PAT-002">PAT-002</a> m, <a class="xref" href="#PAT-003">PAT-003</a> m, <a class="xref" href="#PAT-004">PAT-004</a> m, <a class="xref" href="#PAT-005">PAT-005</a> m (w), <a class="xref" href="#PAT-006">PAT-006</a> m</td></tr>
 <tr><td>Concurrency safety (CON)</td><td><strong>3</strong></td><td>critical</td><td><a class="xref" href="#CON-001">CON-001</a> C, <a class="xref" href="#CON-002">CON-002</a> M, <a class="xref" href="#CON-003">CON-003</a> M, <a class="xref" href="#CON-004">CON-004</a> M, <a class="xref" href="#CON-005">CON-005</a> M (w), <a class="xref" href="#CON-006">CON-006</a> M, <a class="xref" href="#CON-007">CON-007</a> m</td></tr>
-<tr><td>Contract &amp; compatibility (CMP)</td><td><strong>5</strong></td><td>major</td><td><a class="xref" href="#CMP-001">CMP-001</a> M, <a class="xref" href="#CMP-002">CMP-002</a> M, <a class="xref" href="#CMP-003">CMP-003</a> m (w)</td></tr>
-<tr><td>Logging (LGG)</td><td><strong>9</strong></td><td>minor</td><td><a class="xref" href="#LGG-001">LGG-001</a> m, <a class="xref" href="#LGG-002">LGG-002</a> m (w), <a class="xref" href="#LGG-003">LGG-003</a> m, <a class="xref" href="#LGG-004">LGG-004</a> m, <a class="xref" href="#LGG-005">LGG-005</a> m</td></tr>
-<tr><td>Test quality (TSQ)</td><td><strong>4</strong></td><td>major</td><td><a class="xref" href="#TSQ-001">TSQ-001</a> M, <a class="xref" href="#TSQ-002">TSQ-002</a> M, <a class="xref" href="#TSQ-003">TSQ-003</a> M, <a class="xref" href="#TSQ-004">TSQ-004</a> M, <a class="xref" href="#TSQ-005">TSQ-005</a> M, <a class="xref" href="#TSQ-006">TSQ-006</a> M, <a class="xref" href="#TSQ-007">TSQ-007</a> M, <a class="xref" href="#TSQ-008">TSQ-008</a> M, <a class="xref" href="#TSQ-009">TSQ-009</a> M, <a class="xref" href="#TSQ-010">TSQ-010</a> m, <a class="xref" href="#TSQ-011">TSQ-011</a> m, <a class="xref" href="#TSQ-012">TSQ-012</a> m, <a class="xref" href="#TSQ-013">TSQ-013</a> m</td></tr>
+<tr><td>Contract &amp; compatibility (CMP)</td><td><strong>5</strong></td><td>major</td><td><a class="xref" href="#CMP-001">CMP-001</a> M, <a class="xref" href="#CMP-002">CMP-002</a> M, <a class="xref" href="#CMP-003">CMP-003</a> m (w), <a class="xref" href="#CMP-004">CMP-004</a> m</td></tr>
+<tr><td>Logging (LGG)</td><td><strong>9</strong></td><td>minor</td><td><a class="xref" href="#LGG-001">LGG-001</a> m, <a class="xref" href="#LGG-002">LGG-002</a> m (w), <a class="xref" href="#LGG-003">LGG-003</a> m, <a class="xref" href="#LGG-004">LGG-004</a> m, <a class="xref" href="#LGG-005">LGG-005</a> m, <a class="xref" href="#LGG-006">LGG-006</a> m</td></tr>
+<tr><td>Test quality (TSQ)</td><td><strong>4</strong></td><td>major</td><td><a class="xref" href="#TSQ-001">TSQ-001</a> M, <a class="xref" href="#TSQ-002">TSQ-002</a> M, <a class="xref" href="#TSQ-003">TSQ-003</a> M, <a class="xref" href="#TSQ-004">TSQ-004</a> M, <a class="xref" href="#TSQ-005">TSQ-005</a> M, <a class="xref" href="#TSQ-006">TSQ-006</a> M, <a class="xref" href="#TSQ-007">TSQ-007</a> M, <a class="xref" href="#TSQ-008">TSQ-008</a> M, <a class="xref" href="#TSQ-009">TSQ-009</a> M, <a class="xref" href="#TSQ-010">TSQ-010</a> m, <a class="xref" href="#TSQ-011">TSQ-011</a> m, <a class="xref" href="#TSQ-012">TSQ-012</a> m, <a class="xref" href="#TSQ-013">TSQ-013</a> m, <a class="xref" href="#TSQ-014">TSQ-014</a> m</td></tr>
 <tr><td>Type &amp; null safety (TYP)</td><td><strong>9</strong></td><td>minor</td><td><a class="xref" href="#TYP-001">TYP-001</a> m, <a class="xref" href="#TYP-002">TYP-002</a> m (w)</td></tr>
-<tr><td>Readability &amp; maintainability (RDB)</td><td><strong>9</strong></td><td>minor</td><td><a class="xref" href="#RDB-001">RDB-001</a> m, <a class="xref" href="#RDB-002">RDB-002</a> m, <a class="xref" href="#RDB-003">RDB-003</a> m</td></tr>
-<tr><td>Requirements alignment (REQ)</td><td><strong>0</strong></td><td>critical</td><td><a class="xref" href="#REQ-001">REQ-001</a> C, <a class="xref" href="#REQ-002">REQ-002</a> C, <a class="xref" href="#REQ-003">REQ-003</a> C, <a class="xref" href="#REQ-004">REQ-004</a> C, <a class="xref" href="#REQ-005">REQ-005</a> M, <a class="xref" href="#REQ-006">REQ-006</a> M, <a class="xref" href="#REQ-007">REQ-007</a> M, <a class="xref" href="#REQ-008">REQ-008</a> M, <a class="xref" href="#REQ-009">REQ-009</a> M, <a class="xref" href="#REQ-010">REQ-010</a> M, <a class="xref" href="#REQ-011">REQ-011</a> M, <a class="xref" href="#REQ-012">REQ-012</a> m (w), <a class="xref" href="#REQ-013">REQ-013</a> m, <a class="xref" href="#REQ-014">REQ-014</a> m, <a class="xref" href="#REQ-015">REQ-015</a> m, <a class="xref" href="#REQ-016">REQ-016</a> m</td></tr></tbody>
+<tr><td>Readability &amp; maintainability (RDB)</td><td><strong>9</strong></td><td>minor</td><td><a class="xref" href="#RDB-001">RDB-001</a> m, <a class="xref" href="#RDB-002">RDB-002</a> m, <a class="xref" href="#RDB-003">RDB-003</a> m, <a class="xref" href="#RDB-004">RDB-004</a> m</td></tr>
+<tr><td>Requirements alignment (REQ)</td><td><strong>0</strong></td><td>critical</td><td><a class="xref" href="#REQ-001">REQ-001</a> C, <a class="xref" href="#REQ-002">REQ-002</a> C (w), <a class="xref" href="#REQ-003">REQ-003</a> C, <a class="xref" href="#REQ-004">REQ-004</a> C, <a class="xref" href="#REQ-005">REQ-005</a> M, <a class="xref" href="#REQ-006">REQ-006</a> M, <a class="xref" href="#REQ-007">REQ-007</a> M, <a class="xref" href="#REQ-008">REQ-008</a> M, <a class="xref" href="#REQ-009">REQ-009</a> M, <a class="xref" href="#REQ-010">REQ-010</a> M, <a class="xref" href="#REQ-011">REQ-011</a> M, <a class="xref" href="#REQ-012">REQ-012</a> m (w), <a class="xref" href="#REQ-013">REQ-013</a> m, <a class="xref" href="#REQ-014">REQ-014</a> m, <a class="xref" href="#REQ-015">REQ-015</a> m, <a class="xref" href="#REQ-016">REQ-016</a> m, <a class="xref" href="#REQ-017">REQ-017</a> m</td></tr></tbody>
 </table></div>
 <p>Rows stay in catalog order (the History table's column order), never sorted by score — so any two reviews line up row-for-row. The worst aspects are named in the prose above, not by reordering the table.</p>
-<p>Average (trend only, never the headline): <strong>4.5</strong>.</p>
+<p>Average (trend only, never the headline): <strong>4.7</strong>.</p>
 <h3 id="review-scope">Review scope</h3>
-<p>Whole repository at 4781c64 (clean tree). The review covered:</p>
+<p>Incremental review at 66308b9 (clean tree): the diff since 4781c64 for all 11 aspects. Five files were touched: <code>build.gradle.kts</code>, <code>api/InternalController.kt</code>, <code>core/listing/ListingService.kt</code>, <code>sys/SecurityConfig.kt</code> and the new <code>sys/SecurityConfigTest.kt</code>. The base 4781c64 is the service's own repository at the first review. Its tree is the one this repository holds at c51e603, which the diff used. Findings outside the diff are carried forward from the full review at 4781c64, which covered:</p>
 <ul><li><code>src/main/kotlin/</code></li>
 <li><code>src/main/resources/</code> (33 SQL statements and <code>application.yaml</code>)</li>
 <li><code>docs/backend-design/ddl/*.sql</code>, which is the Flyway migration source and therefore code</li>
@@ -257,13 +265,13 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <ul><li><strong>Language(s)</strong>: Kotlin 2.3 (about 3.2k lines in main, 1.5k in test) and PostgreSQL SQL/plpgsql (ddl about 1.2k lines, plus 33 statement files). One Gradle module.</li>
 <li><strong>House pattern standard</strong>: Kotlin, repo-declared (README "Layout", data-design.md §4). It has these parts:</li></ul>
 <p>- <code>core/</code> holds domain types, pure rules and ports, with no framework imports (verified). - <code>repo/</code> holds JdbcClient adapters that load SQL from resources. - <code>api/</code> holds controllers that delegate to core. - <code>sys/</code> holds wiring; <code>worker/</code> holds Kafka and the schedules. - Every multi-statement write is one plpgsql call. - There is no ORM, and tests use hand-written fakes. - No linter or formatter is configured.</p>
-<ul><li><strong>Auth model</strong>: in-code. A JWT resource server with a required issuer; every path except <code>/actuator/**</code> needs a token, <code>/internal/**</code> included (<code>sys/SecurityConfig.kt:22-29</code>). Authorization comes from <code>provider_admin</code> membership in the database. No network isolation is committed: "never routed through public ingress" (<code>InternalController.kt:13</code>) is a comment only. Any holder of an issuer token is an untrusted caller (domain-context §5).</li>
+<ul><li><strong>Auth model</strong> (amended @66308b9): in-code. A JWT resource server with a required issuer; every path except <code>/actuator/**</code> needs a token. <code>/internal/**</code> also needs scope <code>booking.contacts.read</code>, and <code>POST /v1/providers</code> needs scope <code>booking.providers.create</code> (<code>sys/SecurityConfig.kt:36-39</code>). Every other authorization comes from <code>provider_admin</code> membership in the database. No network isolation is committed. Any holder of an issuer token is an untrusted caller (domain-context §5). Which tokens carry the two scopes is up to the IdP and is not recorded (<a class="xref" href="#SEC-009">SEC-009</a>).</li>
 <li><strong>Deployment model</strong>: assumed, never deployed. Basis: owner statement in domain-context §4; there are no manifests.</li></ul>
 <p>- Designed topology: at least 2 <code>booking-api</code> and at least 2 <code>booking-worker</code> replicas from one image, chosen by profile. The relay and both sweeps run on every worker. - Design targets, never measured: about 500 providers, 2,000 resources, 10k bookings/day, 50 req/s search and 10 req/s writes. - Hikari pool of 10. The relay runs every 500 ms in batches of 100; the expiry sweep every 30 s; auto-complete hourly.</p>
 <ul><li><strong>Consumed contract surfaces</strong>: none have a consumer.</li></ul>
 <p>- The HTTP <code>/v1/**</code> API is undeployed. - <code>booking-lifecycle-v1</code> is an unpublished draft (owner). - <code>booking-gate-resolution-v1</code> has no producer. - The schema reaches the database through Flyway at every pod startup, from migrations generated out of <code>ddl/</code> (<code>build.gradle.kts:64-80</code>).</p>
 <ul><li><strong>Tests</strong>: JUnit 5, in three tiers: pure unit tests, hand-faked orchestration tests, and <code>*IT</code> tests against real PostgreSQL (Testcontainers, or <code>BOOKING_TEST_JDBC_URL</code>).</li></ul>
-<p>- The command <code>./gradlew test --offline</code> works here. - Baseline @4781c64: 72 tests, 5 failing. ApplicationContextIT fails 3 times (<a class="xref" href="#TSQ-009">TSQ-009</a>) and the BookingLifecycleIT relay pair fails twice (<a class="xref" href="#TSQ-001">TSQ-001</a>).</p>
+<p>- The command <code>./gradlew test --offline</code> works here. - Baseline @4781c64: 72 tests, 5 failing. At 66308b9 (amended): 77 tests, the same 5 failing. ApplicationContextIT fails 3 times (<a class="xref" href="#TSQ-009">TSQ-009</a>) and the BookingLifecycleIT relay pair fails twice (<a class="xref" href="#TSQ-001">TSQ-001</a>).</p>
 <ul><li><strong>Exclusions</strong>:</li></ul>
 <p>- <code>build/</code>, <code>.idea/</code> and the Gradle wrapper - the documentation tooling: <code>docs/backend-design/build-review.mjs</code>, <code>package*.json</code> and <code>design-review.html</code> (owner: not a module) - the generated <code>data-dictionary.yaml</code></p>
 <ul><li><strong>Domain facts</strong>: from domain-context §4 and §7, owner-confirmed.</li></ul>
@@ -271,14 +279,14 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <ul><li><strong>Sweeps run</strong> (src/main + ddl unless noted):</li></ul>
 <p>- Raw identifier splices: SQL keyword next to <code>${</code>, <code>$x</code> or <code>"+</code>, or <code>EXECUTE</code>. 1 hit (<code>ddl/01:341</code>, a trigger <code>EXECUTE FUNCTION</code>); suppressed. All SQL is resource files with bound params. - Failure collapsed to a benign value: <code>catch (</code>, <code>runCatching</code>, <code>?: emptyList()</code>, <code>EXCEPTION WHEN</code>. 5 hits: <code>RuleViolations.kt:16</code> (translation), <code>OutboxRelay.kt:33</code> (row retained; feeds <a class="xref" href="#REQ-002">REQ-002</a> and <a class="xref" href="#LGG-001">LGG-001</a>), <code>ListingService.kt:27</code> (correct for UC10), <code>ddl/03:348</code> and <code>:595</code> (re-raise as BK001). No collapse finding. - Init-only schema delivery: <code>initdb</code>, <code>init.sql</code>, <code>flyway</code>. 0 init-only hits; Flyway runs at startup. The delivery question leads to <a class="xref" href="#CMP-001">CMP-001</a>. - Ungated tests touching real systems (src/test): <code>DataSource</code>, <code>JdbcClient</code>, <code>PostgreSQLContainer</code>. 5 files plus ApplicationContextIT, all gated by Testcontainers or an env var. The unguarded <code>clean()</code> is <a class="xref" href="#TSQ-010">TSQ-010</a>. - Silently-defaulting selectors: <code>X? = null</code>, <code>?:</code>, <code>orElse</code>, plpgsql <code>DEFAULT</code>. 25+ hits. Leads: <code>BookingDtos.kt:45</code> (<a class="xref" href="#LOG-005">LOG-005</a>), <code>AvailabilityAdminController.kt:66</code> (<a class="xref" href="#LOG-004">LOG-004</a>, <a class="xref" href="#LOG-009">LOG-009</a>, <a class="xref" href="#PAT-003">PAT-003</a>), <code>ddl/03:88</code> (<a class="xref" href="#CMP-002">CMP-002</a>). The rest are suppressed (deliberate PD14 selection, membership-bound on-behalf, owner-confirmed contact fill). - Secrets adjacent to logging: 26 log calls. No credential or customer PII on a reachable path. <code>ApiExceptionHandler.kt:41</code> renders pgjdbc row detail (<a class="xref" href="#LGG-003">LGG-003</a>). - Discarded external-mutation results: <code>send().get</code>, dropped <code>.update()</code>. 6 hits. <code>JdbcProviderSetupRepository.kt:77</code> leads to <a class="xref" href="#LOG-010">LOG-010</a>; <code>:43</code> folds into <a class="xref" href="#ERR-003">ERR-003</a>; the rest are guarded in SQL. - Numeric parse collapsed to zero: <code>toXOrNull</code>, <code>toInt()</code>, <code>parseInt</code>. 0 hits. - Retry budget against the caller's deadline: - Kafka <code>.get(10 s)</code> with <code>max.block.ms</code> left at 60 s, 100 events per pass, all on one shared scheduler thread. This is <a class="xref" href="#ERR-001">ERR-001</a>. - Producer retries after the 10 s timeout cause duplicate publishes, which is credited (at-least-once). - The backoff is capped at 5 min with unlimited attempts. - Caller-supplied clock or identity: request <code>startsAt</code>, <code>resourceRef</code>, <code>onBehalfOfCustomerRef</code>, contact fields, <code>linkedSubject</code>. <code>startsAt</code> is checked against the server clock; <code>linkedSubject</code> leads to <a class="xref" href="#SEC-007">SEC-007</a> (latent); the rest are suppressed. No request field names "now".</p>
 <ul><li><strong>Domain-context checklist</strong>:</li></ul>
-<p>- I1 (one occupied session per resource): held — <code>ddl/01-create-tables.sql:300-302</code>. The concurrency probe found 0 overlaps in 11.8k creates. - I2 (capacity per session): held — <code>ddl/03-functions.sql:342-345, 589-592</code>, CHECK at <code>ddl/01:296</code>. - I3 (one event per committed transition): held — <code>ddl/01:445</code>, <code>ddl/03:421, 510-511</code>. - I4 (no PII in events): held — <code>ddl/03:171-212</code> is the only outbox writer. - I5 (absent, not forbidden): violated at <code>api/InternalController.kt:27-29</code> (<a class="xref" href="#SEC-001">SEC-001</a>). - I6 (transitions are rows): held — <code>ddl/03:437-445</code>. - Hazard, <code>POST /v1/providers</code> self-service: owner declined, filed as <a class="xref" href="#SEC-002">SEC-002</a>. - Hazard, gate consumer with no dead-letter: owner declined, filed as <a class="xref" href="#ERR-005">ERR-005</a> (latent). - Not exercised: the internal contacts endpoint has no legitimate caller (<a class="xref" href="#SEC-001">SEC-001</a> reach rests on an untrusted caller); <code>resource.idp_subject</code> is read by nothing (<a class="xref" href="#REQ-010">REQ-010</a>, <a class="xref" href="#SEC-007">SEC-007</a>); the reschedule resource-change plumbing is unused, but the dropped field sits on the exercised reschedule (<a class="xref" href="#LOG-005">LOG-005</a>); nothing crosses the Kafka edges (<a class="xref" href="#ERR-004">ERR-004</a>/005/006, <a class="xref" href="#SEC-008">SEC-008</a>, <a class="xref" href="#TYP-001">TYP-001</a> latent); <code>AWAITING_PAYMENT</code> is unreachable.</p>
+<p>- I1 (one occupied session per resource): held — <code>ddl/01-create-tables.sql:300-302</code>. The concurrency probe found 0 overlaps in 11.8k creates. - I2 (capacity per session): held — <code>ddl/03-functions.sql:342-345, 589-592</code>, CHECK at <code>ddl/01:296</code>. - I3 (one event per committed transition): held — <code>ddl/01:445</code>, <code>ddl/03:421, 510-511</code>. - I4 (no PII in events): held — <code>ddl/03:171-212</code> is the only outbox writer. - I5 (absent, not forbidden) (amended @66308b9): no longer reachable by an end-user token; the contacts route needs the service scope (<code>sys/SecurityConfig.kt:37</code>). A scope holder still reads any booking, as AQ3 intends. - I6 (transitions are rows): held — <code>ddl/03:437-445</code>. - Hazard, <code>POST /v1/providers</code> self-service: owner declined; filed as <a class="xref" href="#SEC-002">SEC-002</a>, resolved @66308b9. - Hazard, gate consumer with no dead-letter: owner declined, filed as <a class="xref" href="#ERR-005">ERR-005</a> (latent). - Not exercised: the internal contacts endpoint has no legitimate caller (<a class="xref" href="#SEC-001">SEC-001</a>, resolved @66308b9, rested its reach on an untrusted caller); <code>resource.idp_subject</code> is read by nothing (<a class="xref" href="#REQ-010">REQ-010</a>, <a class="xref" href="#SEC-007">SEC-007</a>); the reschedule resource-change plumbing is unused, but the dropped field sits on the exercised reschedule (<a class="xref" href="#LOG-005">LOG-005</a>); nothing crosses the Kafka edges (<a class="xref" href="#ERR-004">ERR-004</a>/005/006, <a class="xref" href="#SEC-008">SEC-008</a>, <a class="xref" href="#TYP-001">TYP-001</a> latent); <code>AWAITING_PAYMENT</code> is unreachable.</p>
 <ul><li><strong>External-state journeys</strong>: 11 operations enumerated.</li></ul>
 <p>- Operations: create (including replay), cancel, approve, decline, attendance, reschedule, the expiry sweep, the auto-complete sweep, gate consume, relay publish/mark/record, provider setup writes, and availability rule and exception writes. - Empty or problematic cells: - create, ambiguous: concurrent same-key requests → <a class="xref" href="#CON-004">CON-004</a>. - create, replay with a different body → <a class="xref" href="#LOG-011">LOG-011</a>. - sweeps, delayed: starved by the relay → <a class="xref" href="#ERR-001">ERR-001</a>. - relay, partial order: → <a class="xref" href="#LOG-003">LOG-003</a>. - relay, rejected by the broker, persistently: no escalation → <a class="xref" href="#REQ-002">REQ-002</a>. - gate consume, partial: claim before effect → <a class="xref" href="#ERR-004">ERR-004</a>. - gate consume, malformed: → <a class="xref" href="#ERR-005">ERR-005</a>. - gate consume, unknown booking: → <a class="xref" href="#ERR-006">ERR-006</a>. - provider setup, partial: → <a class="xref" href="#ERR-003">ERR-003</a>. - provider setup, already-linked: → <a class="xref" href="#LOG-010">LOG-010</a>. - setup and availability writes, pre-flight CHECK: → <a class="xref" href="#ERR-002">ERR-002</a>. - setup and availability writes, retries: → <a class="xref" href="#ERR-007">ERR-007</a>. - availability edit vs create: → <a class="xref" href="#CON-001">CON-001</a>. - Every other cell is decided or credited.</p>
 <ul><li><strong>Scoring interpretation</strong>: none → 10; minors only → 9 flat (listed and counted, never deducted); within the worst open C/M tier each <em>verified</em> finding counts one unit (widespread majors count two; doubling never applies to criticals); score = band start − step × (units − 1), clamped at the band floor (critical 3/−1/0, major 6/−1/4). The first unit is free — it sets the band: a single widespread major is 2 units → 6 − 1×1 = 5, never 4. Unverified C/M claims are listed as candidates and do not count.</li></ul>
 <h3 id="user-overrides">User overrides</h3>
 <p><em>None yet.</em></p>
 <h3 id="open-findings">Open findings</h3>
-<p>Severity: C = critical, M = major, m = minor; (w) = widespread (counts double). All findings open @ 4781c64; finding bodies stay pinned to their discovery hash. Aspect sections stay in catalog order (same as the summary table); a <code>---</code> rule before each aspect header keeps the section boundary visible mid-scroll.</p>
+<p>Severity: C = critical, M = major, m = minor; (w) = widespread (counts double). Findings open @ 66308b9. A finding body stays pinned to its discovery hash: 4781c64 unless its Status line says <code>found @&lt;hash&gt;</code>. Aspect sections stay in catalog order (same as the summary table); a <code>---</code> rule before each aspect header keeps the section boundary visible mid-scroll.</p>
 <hr class="aspect-rule">
 <h4 id="aspect-LOG">Logic correctness (LOG) — 0/10 · 13 open</h4>
 <h4 class="finding" id="LOG-001">LOG-001 · C · isolated — Reschedule never checks the original start, so R27 (and the R6 window) can be bypassed</h4>
@@ -338,7 +346,7 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <h4 class="finding" id="LOG-013">LOG-013 · m · isolated — Ending a rule with an explicit date can extend an already-ended rule</h4>
 <ul><li><code>sql/management/end_availability_rule.sql:3-9</code> has no guard; <code>{effectiveUntil: 2099-01-01}</code> revives a rule ended in the past.</li></ul>
 <hr class="aspect-rule">
-<h4 id="aspect-ERR">Error handling (ERR) — 3/10 · 7 open</h4>
+<h4 id="aspect-ERR">Error handling (ERR) — 3/10 · 8 open</h4>
 <h4 class="finding" id="ERR-001">ERR-001 · C · isolated — A broker outage starves the hold-expiry and auto-complete sweeps: all three jobs share one scheduler thread</h4>
 <ul><li><code>worker/WorkerSchedules.kt:20-21, 41-42, 47-48</code>; <code>application.yaml:7-9</code> (virtual threads → SimpleAsyncTaskScheduler; its fixed-delay executor has core size 1, per javap of spring-context 7.0.9); <code>core/outbox/OutboxRelay.kt:28-50</code>; <code>worker/KafkaEventPublisher.kt:42-43</code></li>
 <li>Worksheet: reach worker replicas during any broker outage with a backlog · residue external (HELD bookings stay HELD past hold_deadline, holding capacity; lapsed holds remain approvable) · signal none (no alerting) → critical</li>
@@ -369,17 +377,13 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <li>A retry after a lost response creates duplicate providers, resources, services, rules or exceptions.</li>
 <li>A repeated reschedule emits a second BookingRescheduled.</li>
 <li>The rule commits before <code>conflictsFor</code>, so a failed read loses the R20 list.</li></ul>
+<h4 class="finding" id="ERR-008">ERR-008 · m · isolated — Scope denials answer Spring's empty 403, not the service's ErrorResponse</h4>
+<ul><li>Status: open, found @66308b9</li>
+<li><code>sys/SecurityConfig.kt:37-38</code>; <code>api/ApiExceptionHandler.kt</code> never sees a filter-chain denial.</li>
+<li>A caller with a valid token but the wrong scope gets no <code>{code, rule, message}</code> body. <code>SecurityConfigTest</code> asserts the status only.</li>
+<li>Cross-ref: <a class="xref" href="#CMP-004">CMP-004</a>.</li></ul>
 <hr class="aspect-rule">
-<h4 id="aspect-SEC">Security (SEC) — 2/10 · 8 open</h4>
-<h4 class="finding" id="SEC-001">SEC-001 · C · isolated — Internal contacts endpoint serves any booking's customer PII to any token holder (I5 violated)</h4>
-<ul><li><code>api/InternalController.kt:27-29</code> → <code>core/listing/ListingService.kt:45</code> → <code>repo/JdbcListingRepository.kt:59-73</code> → <code>sql/listing/booking_contacts.sql:4-12</code> (WHERE <code>b.public_ref</code> only); <code>sys/SecurityConfig.kt:25-27</code> (only <code>authenticated()</code>)</li>
-<li>Worksheet: reach any issuer-token holder with a booking ref that is not theirs · residue external (name, email, phone and cancellation reason disclosed to the wrong principal) · signal none → critical</li>
-<li>Evidence: path variable <code>bookingRef</code> → unscoped SELECT. Refs appear in INFO logs, events and provider listings, and are minted from a non-cryptographic PRNG (<a class="xref" href="#SEC-004">SEC-004</a>). Amplifier: the returned <code>customerRef</code> feeds <code>onBehalfOfCustomerRef</code> for a self-made provider (<a class="xref" href="#SEC-002">SEC-002</a>). "No legitimate caller" (not exercised) does not bound an untrusted caller.</li>
-<li>Cross-ref: REQ (R18, NF5).</li></ul>
-<h4 class="finding" id="SEC-002">SEC-002 · C · isolated — <code>POST /v1/providers</code> has no authorization and makes the caller the first admin (owner declined, domain-context §7)</h4>
-<ul><li><code>api/ProviderSetupController.kt:28-47</code> → <code>core/management/ProviderSetup.kt:61-66</code> → <code>sql/management/insert_provider.sql</code>, <code>insert_provider_admin.sql:3-5</code></li>
-<li>Worksheet: reach any issuer-token holder · residue external (provider and provider_admin rows grant PROVIDER capacity: bypass R4 lead time, and book on behalf of any customer whose ref it holds via <code>BookingService.kt:71-78</code> / unscoped <code>customer/find_id_by_ref.sql</code>) · signal none → critical</li>
-<li>Cross-ref: <a class="xref" href="#ERR-003">ERR-003</a>, REQ (UC1/PD1).</li></ul>
+<h4 id="aspect-SEC">Security (SEC) — 4/10 · 7 open</h4>
 <h4 class="finding" id="SEC-003">SEC-003 · M · widespread — Raw PostgreSQL error text, with PL/pgSQL frames and internal ids, returned to clients</h4>
 <ul><li><code>sys/BookingSqlExceptionTranslator.kt:40</code>; <code>repo/RuleViolations.kt:17</code>; <code>api/BookingOutcomeResponder.kt:83</code>; RAISE texts with bigint ids at <code>ddl/03-functions.sql:250, 423, 429, 560</code></li>
 <li>Evidence (probe): BK001 detail = "ERROR: the resource is occupied … Where: PL/pgSQL function fn_create_booking(bigint,…) line 53 at RAISE". BK008 also acts as a cross-provider existence oracle for resource refs (<code>find_resource_id.sql</code> is unscoped). Weakened defense → major; widespread: every BK rejection on every write path.</li>
@@ -397,6 +401,11 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <h4 class="finding" id="SEC-008">SEC-008 · m · isolated — Gate consumer resolves AWAITING_PROVIDER_APPROVAL as PROVIDER from any topic message (latent)</h4>
 <ul><li><code>core/gate/GateResolutionService.kt:47-63</code> (<code>actorType = PROVIDER</code>, <code>actorSubject = messageId</code>). Contradicts PD18; no producer exists.</li>
 <li>Cross-ref: REQ (PD18), <a class="xref" href="#TYP-002">TYP-002</a>.</li></ul>
+<h4 class="finding" id="SEC-009">SEC-009 · m · isolated — The scope gate relies on the IdP withholding both scopes from end-user tokens, and nothing records that obligation</h4>
+<ul><li>Status: open, found @66308b9</li>
+<li><code>sys/SecurityConfig.kt:37-38, 44-45</code>; comments that state it as fact: <code>api/InternalController.kt:13-15</code>, <code>core/listing/ListingService.kt:42-43</code>, <code>sys/SecurityConfig.kt:19-20</code></li>
+<li>The gate reads the default <code>scope</code>/<code>scp</code> authorities. "Never an end-user token" holds only if the issuer never grants <code>booking.contacts.read</code> or <code>booking.providers.create</code> to end users. PD1 (claim mapping) is still open. Latent: there is no deployment.</li>
+<li>Cross-ref: <a class="xref" href="#REQ-017">REQ-017</a>, PD1.</li></ul>
 <hr class="aspect-rule">
 <h4 id="aspect-PAT">Code pattern (PAT) — 6/10 · 6 open</h4>
 <h4 class="finding" id="PAT-001">PAT-001 · M · isolated — Worker pods serve the whole HTTP API: only worker beans are profile-gated</h4>
@@ -446,7 +455,7 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <h4 class="finding" id="CON-007">CON-007 · m · isolated — <code>record_failure</code> has no <code>dispatched_at IS NULL</code> guard</h4>
 <ul><li><code>sql/outbox/record_failure.sql:3-8</code> versus <code>mark_dispatched.sql:7</code>. A stale claim on another replica writes failure data onto a dispatched row.</li></ul>
 <hr class="aspect-rule">
-<h4 id="aspect-CMP">Contract &amp; compatibility (CMP) — 5/10 · 3 open</h4>
+<h4 id="aspect-CMP">Contract &amp; compatibility (CMP) — 5/10 · 4 open</h4>
 <h4 class="finding" id="CMP-001">CMP-001 · M · isolated — No documented working path delivers a schema change to a database already at V1..V4</h4>
 <ul><li><code>build.gradle.kts:64-80</code> copies only root <code>ddl/*.sql</code> and renames four fixed files. Related: README.md:96-99 (the DDL is the "single source of truth"), data-design.md:607 ("numbered directories"), <code>application.yaml:16-18</code> (Flyway at every pod startup), and <code>src/test/.../TestDatabase.kt:41-45</code> (always <code>clean(); migrate()</code>).</li>
 <li>Mechanism answer: Flyway at startup from generated V1–V4. The routes a maintainer could follow:</li></ul>
@@ -459,8 +468,12 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <li>Cross-ref: LOG, TYP.</li></ul>
 <h4 class="finding" id="CMP-003">CMP-003 · m · widespread — Error-body drift</h4>
 <ul><li>Spring Security 401 and 403 responses have no ErrorResponse body. <code>rule</code> mixes "shape", "none", "UC1", "UC3", "UC9", "PD7", "section 4.1", "R1/R31" and "R18" (<code>ApiExceptionHandler.kt:31,44</code>, <code>AvailabilityAdminController.kt:79</code>, <code>ProviderSetupController.kt:92</code>, <code>BookingOutcomeResponder.kt:97</code>, <code>AvailabilityController.kt:52</code>, <code>BookingDomain.kt:53</code>).</li></ul>
+<h4 class="finding" id="CMP-004">CMP-004 · m · isolated — Two routes narrowed to scoped tokens with no contract note</h4>
+<ul><li>Status: open, found @66308b9</li>
+<li><code>sys/SecurityConfig.kt:37-38</code>: <code>GET /internal/**</code> and <code>POST /v1/providers</code> now answer 403 without the scope. There is no consumer, so nothing breaks; AQ8 defers the published contract.</li>
+<li>Cross-ref: <a class="xref" href="#ERR-008">ERR-008</a>.</li></ul>
 <hr class="aspect-rule">
-<h4 id="aspect-LGG">Logging (LGG) — 9/10 · 5 open</h4>
+<h4 id="aspect-LGG">Logging (LGG) — 9/10 · 6 open</h4>
 <h4 class="finding" id="LGG-001">LGG-001 · m · isolated — Relay failure line loses its cause and blames the broker for DB errors</h4>
 <ul><li><code>core/outbox/OutboxRelay.kt:33-48</code>: a TimeoutException renders <code>reason=null</code>, and the exception is not passed to the logger. A <code>markDispatched</code> DB failure is logged as "event dispatch failed".</li></ul>
 <h4 class="finding" id="LGG-002">LGG-002 · m · widespread — Rejection log lines carry no subject identifier</h4>
@@ -471,8 +484,11 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <ul><li><code>api/BookingOutcomeResponder.kt:91</code> (<code>supplied=</code>); <code>worker/GateResolutionListener.kt:40-43</code> (latent).</li></ul>
 <h4 class="finding" id="LGG-005">LGG-005 · m · isolated — Worker log lines have no correlation id</h4>
 <ul><li><code>sys/CorrelationIdFilter.kt</code> is HTTP-only; pattern at <code>application.yaml:73</code>. Relay, sweep and gate lines print <code>[booking-service,]</code> (NF7).</li></ul>
+<h4 class="finding" id="LGG-006">LGG-006 · m · isolated — A refused contacts or onboarding call leaves no service log line</h4>
+<ul><li>Status: open, found @66308b9</li>
+<li><code>sys/SecurityConfig.kt:37-38</code>. No AccessDeniedHandler or authorization-event listener is configured; denials appear only at Spring Security DEBUG. No documented process reads such a line.</li></ul>
 <hr class="aspect-rule">
-<h4 id="aspect-TSQ">Test quality (TSQ) — 4/10 · 13 open</h4>
+<h4 id="aspect-TSQ">Test quality (TSQ) — 4/10 · 14 open</h4>
 <p>Every TSQ major below was confirmed by applying its named mutation to production code in a scratch clone and running <code>./gradlew test --offline</code>. "Green" means no failures beyond the 5 baseline failures.</p>
 <h4 class="finding" id="TSQ-001">TSQ-001 · M · isolated — Relay-pair ITs broken by the wall clock since 2026-09-01; they mask the outbox SQL they exist to test</h4>
 <ul><li><code>src/test/kotlin/dev/booking/repo/BookingLifecycleIT.kt:45-47</code> (fixed clock 2026-09-01T08:00Z), <code>:183</code>, <code>:208</code>; <code>ddl/01-create-tables.sql:441</code> (<code>next_attempt_at DEFAULT now()</code>); <code>ddl/03-functions.sql:171</code>; <code>sql/outbox/claim_due_events.sql:28</code></li>
@@ -507,6 +523,9 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <p><strong>Candidates (unverified, not scored)</strong></p>
 <ul><li>TSQ · M · fn_auto_complete and attendance (BK009) never executed by a test · <code>ddl/03-functions.sql:660-682, 483-486</code> — named mutation not run; a green run of e.g. <code>fn_auto_complete</code> → no-op would confirm.</li>
 <li>TSQ · M · I4 (no PII in event payload) not asserted · <code>BookingLifecycleIT.kt:186</code> — mutation (add <code>email</code> to <code>fn_emit_event</code> payload) not run.</li></ul>
+<h4 class="finding" id="TSQ-014">TSQ-014 · m · isolated — Route rules are tested against stub controllers that restate the paths</h4>
+<ul><li>Status: open, found @66308b9</li>
+<li><code>src/test/kotlin/dev/booking/sys/SecurityConfigTest.kt:41-46</code> restates <code>/v1/providers</code> and the contacts route instead of using <code>ProviderSetupController.kt:28</code> and <code>InternalController.kt:29</code>. Moving the real contacts route outside <code>/internal/</code> leaves the suite green. <code>jwt()</code> injects authorities directly, so the scope-claim conversion is not exercised. The real wiring is covered only by ApplicationContextIT, which is red (<a class="xref" href="#TSQ-009">TSQ-009</a>).</li></ul>
 <hr class="aspect-rule">
 <h4 id="aspect-TYP">Type &amp; null safety (TYP) — 9/10 · 2 open</h4>
 <h4 class="finding" id="TYP-001">TYP-001 · m · isolated — JSON <code>null</code> in a gate resolution reads as "", so null message ids collide in dedupe (latent)</h4>
@@ -516,15 +535,18 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <li>Sibling UUID refs: <code>ProviderSetup.kt:82-87</code>, <code>AvailabilityPorts.kt:11-17</code>.</li>
 <li><code>GateResolutionService.kt:61</code> writes <code>messageId</code> into <code>actorSubject</code>. No swapped call site was found.</li></ul>
 <hr class="aspect-rule">
-<h4 id="aspect-RDB">Readability &amp; maintainability (RDB) — 9/10 · 3 open</h4>
+<h4 id="aspect-RDB">Readability &amp; maintainability (RDB) — 9/10 · 4 open</h4>
 <h4 class="finding" id="RDB-001">RDB-001 · m · isolated — Hard-coded lookup ids in plpgsql</h4>
 <ul><li><code>ddl/03-functions.sql:67, 72, 261, 357, 360, 473, 502-504, 604, 606, 650, 676, 678</code>. Drift risk is settled by <code>04-seed-lookups.sql:1-2</code>; only readability remains.</li></ul>
 <h4 class="finding" id="RDB-002">RDB-002 · m · isolated — Take, deadline and event mapping duplicated between fn_create_booking and fn_reschedule_booking</h4>
 <ul><li><code>ddl/03-functions.sql:336-354</code> vs <code>:582-601</code>; <code>:363-368</code> vs <code>:607-611</code>; <code>:384, 389</code> vs <code>:519-526, 628</code>.</li></ul>
 <h4 class="finding" id="RDB-003">RDB-003 · m · isolated — Default values stated twice</h4>
 <ul><li>DDL defaults (<code>ddl/01:96-100, 161-164</code>) restated in <code>sql/management/insert_provider.sql:9-13</code> and <code>insert_service.sql:6-9</code>; <code>Page.first</code> (<code>core/listing/Listing.kt:43</code>) restated in <code>api/ListingController.kt:27-28, 41-42</code>.</li></ul>
+<h4 class="finding" id="RDB-004">RDB-004 · m · isolated — The <code>SCOPE_</code> authority prefix is restated in main and in the test</h4>
+<ul><li>Status: open, found @66308b9</li>
+<li><code>sys/SecurityConfig.kt:37-38</code>, <code>src/test/kotlin/dev/booking/sys/SecurityConfigTest.kt:57</code>: an unnamed convention written in two places.</li></ul>
 <hr class="aspect-rule">
-<h4 id="aspect-REQ">Requirements alignment (REQ) — 0/10 · 16 open</h4>
+<h4 id="aspect-REQ">Requirements alignment (REQ) — 0/10 · 17 open</h4>
 <h4 class="finding" id="REQ-001">REQ-001 · C · isolated — Provider cancellation accepted without a reason (R7, UC7)</h4>
 <ul><li><code>api/BookingDtos.kt:35</code>; <code>api/BookingController.kt:69-76</code>; <code>core/booking/BookingLifecycleService.kt:51-56</code>; <code>ddl/03-functions.sql:468-481, 500-516</code>; the column comment at <code>ddl/01:397</code> claims "mandatory … (R7)" but nothing enforces it</li>
 <li>Worksheet: reach provider admin POSTing <code>/cancel</code> with no body · residue external (a CANCELLED booking with a NULL reason in append-only history) · signal none → critical</li>
@@ -569,6 +591,11 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <ul><li><code>api/BookingController.kt:37</code> (<code>required = false</code>); architecture-design.md:243 says it is required.</li></ul>
 <h4 class="finding" id="REQ-016">REQ-016 · m · isolated — Unrequested <code>slotStepMinutes</code> (default 15) shapes offered starts</h4>
 <ul><li><code>api/BookingDtos.kt:150</code>; <code>sql/management/insert_service.sql:9</code>; <code>ddl/03-functions.sql:128</code>.</li></ul>
+<h4 class="finding" id="REQ-017">REQ-017 · m · isolated — The design documents and comments still describe the old access rules, and the scope names appear nowhere else</h4>
+<ul><li>Status: open, found @66308b9</li>
+<li><code>core/management/ProviderSetup.kt:46-52</code> (the creating subject becomes the first admin; nothing says a scope is required); domain-context §6 I5 and §7 hazards ("not enforced", "no authorization check"); <code>docs/backend-design/architecture-design.md:256</code> (service-to-service auth).</li>
+<li>An operator reading the documents cannot learn which scopes to issue.</li>
+<li>Cross-ref: <a class="xref" href="#SEC-009">SEC-009</a>.</li></ul>
 <h3 id="credited-as-intentional">Credited as intentional (recorded to prevent re-litigation)</h3>
 <ul><li>Outbox at-least-once delivery: an unlocked claim, a republish after a lost ack or a timed-out send, and duplicates across relays. Evidence: <code>claim_due_events.sql:6-10</code> and domain-context §7 ("consumers must dedupe on eventId"). This covers duplicates only, not reordering (<a class="xref" href="#LOG-003">LOG-003</a>).</li>
 <li>The outbox never drops an event: the row is retained, the error recorded, and backoff capped at 5 min (<code>OutboxRelay.kt:9-12</code>, domain-context §7). Escalation is a separate matter (<a class="xref" href="#REQ-002">REQ-002</a>).</li>
@@ -579,13 +606,15 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <li>Client contact details fill only the gaps the token leaves (domain-context §5, owner-confirmed).</li></ul>
 <h3 id="resolved-findings-archive">Resolved findings (archive)</h3>
 <p>One line per resolved finding — <code>&lt;ID&gt; · &lt;C|M|m&gt; · &lt;title&gt; · &lt;files&gt; · resolved @&lt;hash&gt;</code>; full bodies live in this document's git history. A reintroduced defect reopens its ID here (moves back to Open findings with <code>reopened @&lt;hash&gt;</code>), never gets a new one.</p>
-<p><em>None yet.</em></p>
+<ul><li id="SEC-001"><a class="xref" href="#SEC-001">SEC-001</a> · C · Internal contacts endpoint serves any booking's customer PII to any token holder (I5 violated) · <code>api/InternalController.kt</code>, <code>core/listing/ListingService.kt</code>, <code>repo/JdbcListingRepository.kt</code> · resolved @66308b9</li>
+<li id="SEC-002"><a class="xref" href="#SEC-002">SEC-002</a> · C · <code>POST /v1/providers</code> has no authorization and makes the caller the first admin (owner declined, domain-context §7) · <code>api/ProviderSetupController.kt</code>, <code>core/management/ProviderSetup.kt</code>, <code>sql/management/insert_provider.sql</code> · resolved @66308b9</li></ul>
 <h3 id="history">History</h3>
 <div class="tablewrap"><table>
 <thead><tr><th>Date</th><th>Hash</th><th>LOG</th><th>ERR</th><th>SEC</th><th>PAT</th><th>CON</th><th>CMP</th><th>LGG</th><th>TSQ</th><th>TYP</th><th>RDB</th><th>REQ</th><th>Worst</th><th>Avg</th></tr></thead>
-<tbody><tr><td>2026-10-17</td><td>4781c64</td><td>0</td><td>3</td><td>2</td><td>6</td><td>3</td><td>5</td><td>9</td><td>4</td><td>9</td><td>9</td><td>0</td><td>LOG, REQ (0)</td><td>4.5</td></tr></tbody>
+<tbody><tr><td>2026-10-17</td><td>4781c64</td><td>0</td><td>3</td><td>2</td><td>6</td><td>3</td><td>5</td><td>9</td><td>4</td><td>9</td><td>9</td><td>0</td><td>LOG, REQ (0)</td><td>4.5</td></tr>
+<tr><td>2026-10-17</td><td>66308b9</td><td>0</td><td>3</td><td>4</td><td>6</td><td>3</td><td>5</td><td>9</td><td>4</td><td>9</td><td>9</td><td>0</td><td>LOG, REQ (0)</td><td>4.7</td></tr></tbody>
 </table></div>
-<p>Per-aspect baselines (diff basis for the next incremental review): LOG, ERR, SEC, PAT, CON, CMP, LGG, TSQ, TYP, RDB, REQ @ 4781c64, whole repo.</p>
+<p>Per-aspect baselines (diff basis for the next incremental review): LOG, ERR, SEC, PAT, CON, CMP, LGG, TSQ, TYP, RDB, REQ @ 66308b9, whole repo.</p>
 </section>
 
 <footer class="gen">Generated from <code>review.md</code> on 2026-10-17 — do not edit this page; regenerate with the <em>reviewing-code-by-aspect</em> skill's <code>scripts/render_review.mjs</code> instead. Agents must consume the markdown ledger, not this page. Fully self-contained; no external dependencies.</footer>
@@ -594,7 +623,7 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <div id="tooltip"></div>
 <script>
 const tip = document.getElementById('tooltip');
-const FRAMES = null;
+const FRAMES = [{"date":"2026-10-17","hash":"4781c64","avg":"4.5","scores":{"LOG":0,"ERR":3,"SEC":2,"PAT":6,"CON":3,"CMP":5,"LGG":9,"TSQ":4,"TYP":9,"RDB":9,"REQ":0},"resolved":[],"found":[],"reopened":[],"open":{"LOG":["LOG-001 C","LOG-002 C","LOG-003 C","LOG-004 C","LOG-005 C","LOG-006 M","LOG-007 M","LOG-008 M","LOG-009 M","LOG-010 M","LOG-011 M","LOG-012 m","LOG-013 m"],"ERR":["ERR-001 C","ERR-002 M","ERR-003 M","ERR-004 m","ERR-005 m","ERR-006 m","ERR-007 m"],"SEC":["SEC-003 M","SEC-004 M","SEC-005 M","SEC-006 m","SEC-007 m","SEC-008 m","SEC-001 C","SEC-002 C"],"PAT":["PAT-001 M","PAT-002 m","PAT-003 m","PAT-004 m","PAT-005 m","PAT-006 m"],"CON":["CON-001 C","CON-002 M","CON-003 M","CON-004 M","CON-005 M","CON-006 M","CON-007 m"],"CMP":["CMP-001 M","CMP-002 M","CMP-003 m"],"LGG":["LGG-001 m","LGG-002 m","LGG-003 m","LGG-004 m","LGG-005 m"],"TSQ":["TSQ-001 M","TSQ-002 M","TSQ-003 M","TSQ-004 M","TSQ-005 M","TSQ-006 M","TSQ-007 M","TSQ-008 M","TSQ-009 M","TSQ-010 m","TSQ-011 m","TSQ-012 m","TSQ-013 m"],"TYP":["TYP-001 m","TYP-002 m"],"RDB":["RDB-001 m","RDB-002 m","RDB-003 m"],"REQ":["REQ-001 C","REQ-002 C","REQ-003 C","REQ-004 C","REQ-005 M","REQ-006 M","REQ-007 M","REQ-008 M","REQ-009 M","REQ-010 M","REQ-011 M","REQ-012 m","REQ-013 m","REQ-014 m","REQ-015 m","REQ-016 m"]}},{"date":"2026-10-17","hash":"66308b9","avg":"4.7","scores":{"LOG":0,"ERR":3,"SEC":4,"PAT":6,"CON":3,"CMP":5,"LGG":9,"TSQ":4,"TYP":9,"RDB":9,"REQ":0},"resolved":[{"id":"SEC-001","tier":"C","title":"Internal contacts endpoint serves any booking's customer PII to any token holder (I5 violated)"},{"id":"SEC-002","tier":"C","title":"`POST /v1/providers` has no authorization and makes the caller the first admin (owner declined, domain-context §7)"}],"found":[{"id":"ERR-008","tier":"m","title":"Scope denials answer Spring's empty 403, not the service's ErrorResponse"},{"id":"SEC-009","tier":"m","title":"The scope gate relies on the IdP withholding both scopes from end-user tokens, and nothing records that obligation"},{"id":"CMP-004","tier":"m","title":"Two routes narrowed to scoped tokens with no contract note"},{"id":"LGG-006","tier":"m","title":"A refused contacts or onboarding call leaves no service log line"},{"id":"TSQ-014","tier":"m","title":"Route rules are tested against stub controllers that restate the paths"},{"id":"RDB-004","tier":"m","title":"The `SCOPE_` authority prefix is restated in main and in the test"},{"id":"REQ-017","tier":"m","title":"The design documents and comments still describe the old access rules, and the scope names appear nowhere else"}],"reopened":[],"open":{"LOG":["LOG-001 C","LOG-002 C","LOG-003 C","LOG-004 C","LOG-005 C","LOG-006 M","LOG-007 M","LOG-008 M","LOG-009 M","LOG-010 M","LOG-011 M","LOG-012 m","LOG-013 m"],"ERR":["ERR-001 C","ERR-002 M","ERR-003 M","ERR-004 m","ERR-005 m","ERR-006 m","ERR-007 m","ERR-008 m"],"SEC":["SEC-003 M","SEC-004 M","SEC-005 M","SEC-006 m","SEC-007 m","SEC-008 m","SEC-009 m"],"PAT":["PAT-001 M","PAT-002 m","PAT-003 m","PAT-004 m","PAT-005 m","PAT-006 m"],"CON":["CON-001 C","CON-002 M","CON-003 M","CON-004 M","CON-005 M","CON-006 M","CON-007 m"],"CMP":["CMP-001 M","CMP-002 M","CMP-003 m","CMP-004 m"],"LGG":["LGG-001 m","LGG-002 m","LGG-003 m","LGG-004 m","LGG-005 m","LGG-006 m"],"TSQ":["TSQ-001 M","TSQ-002 M","TSQ-003 M","TSQ-004 M","TSQ-005 M","TSQ-006 M","TSQ-007 M","TSQ-008 M","TSQ-009 M","TSQ-010 m","TSQ-011 m","TSQ-012 m","TSQ-013 m","TSQ-014 m"],"TYP":["TYP-001 m","TYP-002 m"],"RDB":["RDB-001 m","RDB-002 m","RDB-003 m","RDB-004 m"],"REQ":["REQ-001 C","REQ-002 C","REQ-003 C","REQ-004 C","REQ-005 M","REQ-006 M","REQ-007 M","REQ-008 M","REQ-009 M","REQ-010 M","REQ-011 M","REQ-012 m","REQ-013 m","REQ-014 m","REQ-015 m","REQ-016 m","REQ-017 m"]}}];
 const GEO = {"labelW":200,"plotW":520,"barH":12};
 const BANDS = {"noship":{"color":"#d03b3b","icon":"✕","label":"do not ship"},"fix":{"color":"#fab219","icon":"⚠","label":"schedule fixes"},"ship":{"color":"#0ca30c","icon":"✓","label":"ship"}};
 const bandOf = (s) => (s <= 3 ? 'noship' : s >= 8 ? 'ship' : 'fix');
@@ -616,13 +645,31 @@ function applyFrame(i) {
     bar.setAttribute('fill', b.color);
     const num = row.querySelector('.score');
     num.setAttribute('x', GEO.labelW + w + 7);
-    num.textContent = s;
     row.querySelector('.bandchip').textContent = b.icon + ' ' + b.label;
+    const prev = i > 0 ? FRAMES[i - 1].scores[row.dataset.abbr] : undefined, d = row.querySelector('.delta');
+    num.firstChild.nodeValue = s;
+    d.textContent = prev === undefined || prev === s ? '' : (s > prev ? '▲' : '▼') + Math.abs(s - prev);
+    d.setAttribute('class', 'delta ' + (prev === undefined || prev === s ? '' : s > prev ? 'up' : 'down'));
     row.dataset.curScore = s;
     row.dataset.curBand = b.icon + ' ' + b.label;
   }
+  renderChanges(i);
   const label = document.getElementById('hist-label');
   if (label) label.textContent = f.date + ' @ ' + f.hash + ' · avg ' + (f.avg || '—') + (atLatest ? ' (latest)' : '');
+}
+const escH = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const TIERS = { C: 'critical', M: 'major', m: 'minor' };
+function renderChanges(i) {
+  const box = document.getElementById('hist-changes');
+  if (!box) return;
+  const f = FRAMES[i];
+  if (i === 0) { box.innerHTML = '<div class="none">First review in the history: every finding open here was found by it.</div>'; return; }
+  const list = (xs) => xs.length
+    ? '<ul>' + xs.map(x => '<li><a class="xref" href="#' + x.id + '">' + x.id + '</a> · ' + TIERS[x.tier] + ' — ' + escH(x.title) + '</li>').join('') + '</ul>'
+    : '<span class="none">none</span>';
+  box.innerHTML = '<div class="chg"><b>Resolved (' + f.resolved.length + ')</b>' + list(f.resolved) + '</div>' +
+    '<div class="chg"><b>Found (' + f.found.length + ')</b>' + list(f.found) + '</div>' +
+    (f.reopened.length ? '<div class="chg"><b>Reopened (' + f.reopened.length + ')</b>' + list(f.reopened) + '</div>' : '');
 }
 const range = document.getElementById('histrange');
 if (range && FRAMES) { range.addEventListener('input', () => applyFrame(+range.value)); applyFrame(FRAMES.length - 1); }
@@ -640,7 +687,7 @@ for (const row of rows) {
     } else {
       tip.innerHTML = '<div class="t-head">' + d.name + ' (' + d.abbr + ') — ' + (d.curScore || d.score) + '/10</div>' +
         '<div class="t-sub">' + (d.curBand || d.band) + '</div>' +
-        '<div class="t-sub">open findings are listed only for the latest review</div>';
+        '<div class="t-sub">open: ' + ((FRAMES[+range.value].open || {})[d.abbr] || []).join(', ') + '</div>';
     }
     tip.style.display = 'block';
     const pad = 14, vw = window.innerWidth;

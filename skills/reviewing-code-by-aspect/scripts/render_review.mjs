@@ -381,7 +381,12 @@ figcaption { color:var(--ink-muted); font-size:12.5px; margin-top:8px; }
 .timeline input[type=range] { width:100%; accent-color:var(--accent); margin:0; }
 .timeline-meta { display:flex; justify-content:space-between; align-items:baseline; gap:12px;
   font-size:12px; color:var(--ink-muted); font-variant-numeric:tabular-nums; }
-#hist-label { font-size:13px; font-weight:600; color:var(--ink-2); text-align:center; }
+#hist-label { font-size:13px; font-weight:600; color:var(--ink-2); text-align:center; margin-top:4px; }
+.timeline-steps { display:flex; justify-content:space-between; margin:2px -6px 0; }
+.timeline-steps button { font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--ink-muted);
+  background:none; border:0; border-radius:4px; padding:2px 6px; cursor:pointer; }
+.timeline-steps button:hover { color:var(--ink); background:var(--code-bg); }
+.timeline-steps button[aria-current="step"] { color:var(--accent); font-weight:600; }
 svg .row.nohist { opacity:.35; }
 svg .delta.up { fill:#0ca30c; } svg .delta.down { fill:#d03b3b; }
 #hist-changes { margin:12px 0 0; font-size:13px; color:var(--ink-2); }
@@ -425,7 +430,8 @@ ${aspects.map(a => `<a style="padding-left:22px" href="#aspect-${a.abbr}">${esc(
   ${chart()}
   ${frames ? `<div class="timeline">
     <input type="range" id="histrange" min="0" max="${frames.length - 1}" step="1" value="${frames.length - 1}" aria-label="Review history position (${frames.length} reviews, latest selected)">
-    <div class="timeline-meta"><span>${esc(frames[0].date)}</span><span id="hist-label"></span><span>${esc(frames[frames.length - 1].date)}</span></div>
+    <div class="timeline-steps">${frames.map((f, i) => `<button type="button" data-step="${i}" title="${esc(f.date)}">${esc(f.hash)}</button>`).join('')}</div>
+    <div id="hist-label"></div>
   </div>
   <div id="hist-changes" aria-live="polite"></div>` : ''}
   <figcaption>Aspects in fixed catalog order (comparable across reviews). Bands: ≥8 ship · 4–7 schedule fixes · ≤3 do not ship. Exact values and finding IDs in the summary table below; hover a row for its open findings.${frames ? ' Drag the timeline to replay earlier reviews: each step shows the score change against the review before it and the findings that review resolved, found or reopened.' : ''}</figcaption>
@@ -473,25 +479,33 @@ function applyFrame(i) {
     row.dataset.curBand = b.icon + ' ' + b.label;
   }
   renderChanges(i);
+  for (const b of document.querySelectorAll('.timeline-steps button')) b.removeAttribute('aria-current');
+  document.querySelector('.timeline-steps button[data-step="' + i + '"]')?.setAttribute('aria-current', 'step');
   const label = document.getElementById('hist-label');
   if (label) label.textContent = f.date + ' @ ' + f.hash + ' · avg ' + (f.avg || '—') + (atLatest ? ' (latest)' : '');
 }
 const escH = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const TIERS = { C: 'critical', M: 'major', m: 'minor' };
+const codeH = (t) => escH(t).replace(/\\x60([^\\x60]+)\\x60/g, '<code>$1</code>');
 function renderChanges(i) {
   const box = document.getElementById('hist-changes');
   if (!box) return;
   const f = FRAMES[i];
   if (i === 0) { box.innerHTML = '<div class="none">First review in the history: every finding open here was found by it.</div>'; return; }
   const list = (xs) => xs.length
-    ? '<ul>' + xs.map(x => '<li><a class="xref" href="#' + x.id + '">' + x.id + '</a> · ' + TIERS[x.tier] + ' — ' + escH(x.title) + '</li>').join('') + '</ul>'
+    ? '<ul>' + xs.map(x => '<li><a class="xref" href="#' + x.id + '">' + x.id + '</a> · ' + TIERS[x.tier] + ' — ' + codeH(x.title) + '</li>').join('') + '</ul>'
     : '<span class="none">none</span>';
   box.innerHTML = '<div class="chg"><b>Resolved (' + f.resolved.length + ')</b>' + list(f.resolved) + '</div>' +
     '<div class="chg"><b>Found (' + f.found.length + ')</b>' + list(f.found) + '</div>' +
     (f.reopened.length ? '<div class="chg"><b>Reopened (' + f.reopened.length + ')</b>' + list(f.reopened) + '</div>' : '');
 }
 const range = document.getElementById('histrange');
-if (range && FRAMES) { range.addEventListener('input', () => applyFrame(+range.value)); applyFrame(FRAMES.length - 1); }
+if (range && FRAMES) {
+  range.addEventListener('input', () => applyFrame(+range.value));
+  for (const b of document.querySelectorAll('.timeline-steps button'))
+    b.addEventListener('click', () => { range.value = b.dataset.step; applyFrame(+b.dataset.step); });
+  applyFrame(FRAMES.length - 1);
+}
 
 for (const row of rows) {
   row.addEventListener('mousemove', (e) => {

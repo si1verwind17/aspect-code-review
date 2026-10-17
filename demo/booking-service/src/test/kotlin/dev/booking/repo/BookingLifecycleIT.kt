@@ -3,10 +3,12 @@ package dev.booking.repo
 import dev.booking.core.booking.ActorType
 import dev.booking.core.booking.BookingLifecycleService
 import dev.booking.core.booking.BookingOutcome
+import dev.booking.core.booking.BookingRule
 import dev.booking.core.booking.BookingState
 import dev.booking.core.booking.CreateBookingCommand
 import dev.booking.core.booking.CustomerContact
 import dev.booking.core.booking.HoldReason
+import dev.booking.core.booking.RescheduleCommand
 import dev.booking.core.gate.GateHandling
 import dev.booking.core.gate.GateOutcome
 import dev.booking.core.gate.GateResolution
@@ -58,7 +60,7 @@ class BookingLifecycleIT {
     private val inbox = JdbcInboxRepository(jdbc, sql)
 
     private val lifecycle = BookingLifecycleService(
-        lifecycleRepo, lifecycleRepo, customers, admins, clock, ids,
+        lifecycleRepo, lifecycleRepo, bookings, customers, admins, clock, ids,
     )
 
     private val serviceRef = UUID.fromString("00000000-0000-7000-8000-00000000b001")
@@ -162,6 +164,106 @@ class BookingLifecycleIT {
         assertTrue(
             lifecycle.approve(ref, "sub-customer") is BookingOutcome.NotFound,
             "approval is provider-only, and the refusal must not reveal why",
+        )
+    }
+
+    private fun rescheduleAt(ref: UUID, now: Instant, startsAt: Instant, actor: ActorType, gate: HoldReason?) =
+        lifecycleRepo.reschedule(
+            RescheduleCommand(
+                bookingId = assertNotNull(lifecycleRepo.findIdentity(ref)).bookingId,
+                bookingRef = ref,
+                newResourceId = null,
+                newStartsAt = startsAt,
+                actorType = actor,
+                actorSubject = if (actor == ActorType.CUSTOMER) "sub-customer" else "sub-owner",
+                gate = gate,
+                now = now,
+                eventId = ids.newId(),
+            ),
+        )
+
+    private fun bookingRow(ref: UUID): Triple<Instant, Instant?, Long> =
+        jdbc.sql(
+            "SELECT b.starts_at, b.hold_deadline, s.resource_id FROM booking b " +
+                "JOIN session s USING (session_id) WHERE b.public_ref = :ref::uuid",
+        ).param("ref", ref).query { rs, _ ->
+            Triple(
+                rs.getObject(1, java.time.OffsetDateTime::class.java).toInstant(),
+                rs.getObject(2, java.time.OffsetDateTime::class.java)?.toInstant(),
+                rs.getLong(3),
+            )
+        }.single()
+
+    @Test
+    fun `a started booking cannot be rescheduled`() {
+        val ref = heldBooking()
+        lifecycle.approve(ref, "sub-owner")
+
+        val outcome = rescheduleAt(
+            ref, now = slot.plusSeconds(3600), startsAt = slot.plusSeconds(4 * 3600),
+            actor = ActorType.PROVIDER, gate = null,
+        )
+
+        assertEquals(BookingRule.FORBIDDEN_TRANSITION, (outcome as BookingOutcome.Rejected).rule, "R27")
+        assertEquals(slot, bookingRow(ref).first, "the booking stays where it was")
+    }
+
+    @Test
+    fun `a customer cannot move a confirmed booking inside the cancellation window`() {
+        val ref = heldBooking()
+        lifecycle.approve(ref, "sub-owner")
+
+        val outcome = rescheduleAt(
+            ref, now = slot.minusSeconds(1800), startsAt = slot.plusSeconds(2 * 3600),
+            actor = ActorType.CUSTOMER, gate = HoldReason.AWAITING_PROVIDER_APPROVAL,
+        )
+
+        assertEquals(BookingRule.PAST_CANCELLATION_WINDOW, (outcome as BookingOutcome.Rejected).rule, "R6")
+    }
+
+    @Test
+    fun `rescheduling a held request keeps its hold deadline`() {
+        val ref = heldBooking()
+        val deadline = assertNotNull(bookingRow(ref).second)
+
+        val outcome = rescheduleAt(
+            ref, now = deadline.minusSeconds(60), startsAt = slot.plusSeconds(3600),
+            actor = ActorType.CUSTOMER, gate = HoldReason.AWAITING_PROVIDER_APPROVAL,
+        )
+
+        assertEquals(BookingState.HELD, (outcome as BookingOutcome.Transitioned).booking.state)
+        assertEquals(slot.plusSeconds(3600), bookingRow(ref).first)
+        assertEquals(deadline, bookingRow(ref).second, "section 4.1: HELD -> HELD keeps the deadline")
+    }
+
+    @Test
+    fun `a reschedule onto a named resource moves the booking there`() {
+        val secondRef = UUID.fromString("00000000-0000-7000-8000-00000000b003")
+        jdbc.sql(
+            "INSERT INTO resource (public_ref, provider_id, name) SELECT :ref::uuid, provider_id, 'Room 2' FROM provider",
+        ).param("ref", secondRef).update()
+        jdbc.sql(
+            "INSERT INTO service_resource (service_id, resource_id, provider_id) " +
+                "SELECT s.service_id, r.resource_id, s.provider_id FROM service s, resource r " +
+                "WHERE r.public_ref = :ref::uuid",
+        ).param("ref", secondRef).update()
+        jdbc.sql(
+            """
+            INSERT INTO availability_rule (public_ref, resource_id, day_of_week, start_time, end_time, effective_from)
+            SELECT gen_random_uuid(), resource_id, EXTRACT(DOW FROM DATE '2026-09-02'),
+                   '08:00', '18:00', DATE '2026-01-01' FROM resource WHERE public_ref = :ref::uuid
+            """.trimIndent(),
+        ).param("ref", secondRef).update()
+        val ref = heldBooking()
+
+        val outcome = lifecycle.reschedule(ref, "sub-customer", slot.plusSeconds(3600), secondRef)
+
+        assertTrue(outcome is BookingOutcome.Transitioned, "got $outcome")
+        assertEquals(assertNotNull(bookings.findResourceId(secondRef)), bookingRow(ref).third)
+        assertTrue(
+            lifecycle.reschedule(ref, "sub-customer", slot.plusSeconds(7200), UUID.randomUUID())
+                is BookingOutcome.Rejected,
+            "an unknown resource is refused, never replaced by the current one",
         )
     }
 

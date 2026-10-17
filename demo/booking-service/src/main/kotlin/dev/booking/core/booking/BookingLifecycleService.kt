@@ -20,6 +20,7 @@ import java.util.UUID
 class BookingLifecycleService(
     private val lookup: BookingLookup,
     private val transitions: BookingTransitions,
+    private val catalog: BookingCatalog,
     private val customers: CustomerDirectory,
     private val providerAdmins: ProviderAdminDirectory,
     private val clock: Clock,
@@ -64,14 +65,24 @@ class BookingLifecycleService(
             )
         }
 
-    /** UC8 — move a booking atomically, keeping its identity. */
+    /**
+     * UC8 — move a booking atomically, keeping its identity.
+     *
+     * A named resource is honoured as given, as at creation: a reference that
+     * does not resolve is refused, never replaced by the current resource, and
+     * eligibility stays the database's call (BK008).
+     */
     fun reschedule(
         ref: UUID,
         subject: String,
         newStartsAt: Instant,
-        newResourceId: Long?,
+        newResourceRef: UUID?,
     ): BookingOutcome =
         onBooking(ref, subject) { booking, actor ->
+            val newResourceId = newResourceRef?.let {
+                catalog.findResourceId(it)
+                    ?: return@onBooking BookingOutcome.Rejected(BookingRule.NOT_BOOKABLE, "no such resource")
+            }
             transitions.reschedule(
                 RescheduleCommand(
                     bookingId = booking.bookingId,

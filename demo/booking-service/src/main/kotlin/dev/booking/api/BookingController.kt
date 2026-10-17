@@ -85,7 +85,7 @@ class BookingController(
                 ref = bookingRef,
                 subject = currentActor.require().subject,
                 newStartsAt = requireNotNull(request.startsAt),
-                newResourceId = null,
+                newResourceRef = request.resourceRef,
             ),
         )
 

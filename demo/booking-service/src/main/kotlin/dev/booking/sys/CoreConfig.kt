@@ -46,12 +46,13 @@ class CoreConfig {
     fun bookingLifecycleService(
         lookup: BookingLookup,
         transitions: BookingTransitions,
+        catalog: BookingCatalog,
         customers: CustomerDirectory,
         providerAdmins: ProviderAdminDirectory,
         clock: Clock,
         ids: IdGenerator,
     ): BookingLifecycleService =
-        BookingLifecycleService(lookup, transitions, customers, providerAdmins, clock, ids)
+        BookingLifecycleService(lookup, transitions, catalog, customers, providerAdmins, clock, ids)
 
     @Bean
     fun availabilityService(query: AvailabilityQuery): AvailabilityService =

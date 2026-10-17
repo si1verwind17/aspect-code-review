@@ -554,6 +554,8 @@ DECLARE
     v_s_ends     timestamptz;
     v_to_state   smallint;
     v_deadline   timestamptz;
+    v_hold       integer;
+    v_window     integer;
 BEGIN
     SELECT * INTO b FROM booking WHERE booking_id = p_booking_id FOR UPDATE;
     IF NOT FOUND THEN
@@ -561,6 +563,23 @@ BEGIN
     END IF;
     IF (SELECT bs.is_terminal FROM booking_state bs WHERE bs.booking_state_id = b.booking_state_id) THEN
         RAISE EXCEPTION 'a terminal booking cannot be rescheduled' USING ERRCODE = 'BK006';
+    END IF;
+    -- R27 is judged on the booking's current start, before the row is moved:
+    -- fn_transition_booking below only ever sees the new one.
+    IF p_now >= b.starts_at THEN
+        RAISE EXCEPTION 'a started booking cannot be rescheduled; record attendance instead'
+            USING ERRCODE = 'BK006';
+    END IF;
+    -- R6: a customer who may no longer cancel a confirmed booking may not move
+    -- it either, or rescheduling out of the window and cancelling there would
+    -- undo the window.  A HELD request has no window to protect (section 4.1).
+    IF p_actor_type_id = 1 AND b.booking_state_id = 2 THEN
+        SELECT p.cancellation_window_minutes INTO v_window
+          FROM provider p WHERE p.provider_id = b.provider_id;
+        IF p_now > b.starts_at - make_interval(mins => v_window) THEN
+            RAISE EXCEPTION 'past the % minute cancellation window', v_window
+                USING ERRCODE = 'BK007';
+        END IF;
     END IF;
 
     SELECT s.service_id, s.session_id, s.resource_id
@@ -600,9 +619,16 @@ BEGIN
         RAISE EXCEPTION 'session is at capacity' USING ERRCODE = 'BK002';
     END IF;
 
-    IF p_new_hold_reason_id IS NULL THEN
-        v_to_state := 2; v_deadline := NULL;                       -- stays CONFIRMED
+    IF b.booking_state_id = 1 THEN
+        -- HELD -> HELD: new time only; the hold reason and deadline are kept
+        -- (section 4.1), so moving a request never renews its hold.  The
+        -- deadline still never outlives the new start, as at creation.
+        v_to_state := 1; v_hold := b.hold_reason_id;
+        v_deadline := LEAST(b.hold_deadline, v_s_starts);
+    ELSIF p_new_hold_reason_id IS NULL THEN
+        v_to_state := 2; v_hold := NULL; v_deadline := NULL;       -- stays CONFIRMED
     ELSE
+        v_hold := p_new_hold_reason_id;
         v_to_state := 1;                                           -- back to HELD (R11)
         SELECT LEAST(p_now + make_interval(mins =>
                    CASE WHEN hr.code = 'AWAITING_PROVIDER_APPROVAL'
@@ -616,7 +642,7 @@ BEGIN
            starts_at        = v_s_starts,
            ends_at          = v_s_ends,
            reschedule_count = reschedule_count + 1,
-           hold_reason_id   = p_new_hold_reason_id,
+           hold_reason_id   = v_hold,
            hold_deadline    = v_deadline,
            updated_at       = p_now
      WHERE booking_id = p_booking_id;

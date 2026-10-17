@@ -71,6 +71,46 @@ if (frames) {
     last.scores[a.abbr] = a.score; // summary table is authoritative for the latest frame
   }
 }
+// ---------- per-review finding deltas (what each timeline frame changed) ----------
+// Derived from the ledger's own status markers, so no extra bookkeeping:
+// archive lines end `resolved @<hash>`; an open finding added by a later
+// review carries `found @<hash>` (or `reopened @<hash>`) in its Status line,
+// and one without either has been open since the first History row.
+const sectionOf = (name) => {
+  const m = md.match(new RegExp(`^## ${name}[^\\n]*\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, 'm'));
+  return m ? m[1] : '';
+};
+const ledgerFindings = []; // { id, tier, title, found, resolved, reopened }
+{
+  const open = sectionOf('Open findings');
+  const heads = [...open.matchAll(/^\*\*([A-Z]{3}-\d{3})\s*·\s*([CMm])\s*·\s*(?:isolated|widespread)\s*[—-]+\s*(.+?)\*\*\s*$/gm)];
+  heads.forEach((h, k) => {
+    const body = open.slice(h.index, k + 1 < heads.length ? heads[k + 1].index : undefined).split(/^(?:---|### )/m)[0];
+    const st = body.match(/^- Status:.*$/m)?.[0] ?? '';
+    ledgerFindings.push({ id: h[1], tier: h[2], title: h[3], found: st.match(/found @([0-9a-f]{7,40})/)?.[1] ?? null,
+      reopened: st.match(/reopened @([0-9a-f]{7,40})/)?.[1] ?? null, resolved: null });
+  });
+  for (const line of sectionOf('Resolved findings').split('\n')) {
+    const m = line.match(/^(?:[-*]\s+)?`?([A-Z]{3}-\d{3})`?\s*·\s*([CMm])\s*·\s*(.+?)\s*·.*\bresolved @([0-9a-f]{7,40})/);
+    if (m) ledgerFindings.push({ id: m[1], tier: m[2], title: m[3], found: line.match(/found @([0-9a-f]{7,40})/)?.[1] ?? null, reopened: null, resolved: m[4] });
+  }
+}
+if (frames) {
+  const at = (h) => (h ? frames.findIndex(f => f.hash.startsWith(h) || h.startsWith(f.hash)) : -1);
+  for (const f of frames) { f.resolved = []; f.found = []; f.reopened = []; f.open = {}; }
+  for (const x of ledgerFindings) {
+    const brief = { id: x.id, tier: x.tier, title: x.title };
+    const born = Math.max(0, at(x.found)), gone = x.resolved ? at(x.resolved) : frames.length, back = at(x.reopened);
+    if (born > 0) frames[born].found.push(brief);
+    if (x.resolved && gone > 0) frames[gone].resolved.push(brief);
+    if (back > 0) frames[back].reopened.push(brief);
+    // Open from discovery until resolution; a reopened finding's closed gap is
+    // not recoverable (its archive line is deleted on reopen), so it reads as
+    // open throughout. An unknown resolve hash keeps the finding out of every frame.
+    for (let i = born; i < (gone === -1 ? born : gone) && i < frames.length; i++)
+      (frames[i].open[x.id.slice(0, 3)] ??= []).push(`${x.id} ${x.tier}`);
+  }
+}
 const knownIds = new Set();
 for (const m of md.matchAll(/\b([A-Z]{3}-\d{3})\b/g)) knownIds.add(m[1]);
 
@@ -164,6 +204,7 @@ function mdToHtml(text) {
   const lines = text.split('\n');
   const htm = [];
   const toc = [];
+  const anchored = new Set(); // finding ids that already own an anchor
   let i = 0;
   const paraBuf = [];
   const flushPara = () => {
@@ -171,7 +212,7 @@ function mdToHtml(text) {
     const joined = paraBuf.join(' ');
     paraBuf.length = 0;
     const f = joined.match(FINDING_RE);
-    if (f) { htm.push(`<h4 class="finding" id="${f[1]}">${inline(joined.replace(/^\*\*|\*\*$/g, ''), { selfId: f[1] })}</h4>`); return; }
+    if (f) { anchored.add(f[1]); htm.push(`<h4 class="finding" id="${f[1]}">${inline(joined.replace(/^\*\*|\*\*$/g, ''), { selfId: f[1] })}</h4>`); return; }
     htm.push(`<p>${inline(joined)}</p>`);
   };
   while (i < lines.length) {
@@ -211,7 +252,10 @@ function mdToHtml(text) {
         while (i < lines.length && /^\s+\S/.test(lines[i]) && !lines[i].trim().startsWith('- ')) { item += ' ' + lines[i].trim(); i++; }
         items.push(item);
       }
-      htm.push('<ul>' + items.map(it => `<li>${inline(it)}</li>`).join('\n') + '</ul>');
+      // An archive line becomes the anchor of a resolved finding, so timeline
+      // links to it land somewhere.
+      const anchor = (it) => { const m = it.match(/^`?([A-Z]{3}-\d{3})\b/); if (!m || anchored.has(m[1])) return ''; anchored.add(m[1]); return ` id="${m[1]}"`; };
+      htm.push('<ul>' + items.map(it => `<li${anchor(it)}>${inline(it)}</li>`).join('\n') + '</ul>');
       continue;
     }
     paraBuf.push(line.trim());
@@ -256,7 +300,7 @@ function chart() {
     p.push(`<rect x="0" y="${y}" width="${W}" height="${pitch}" fill="transparent" class="hit"/>`);
     p.push(`<text x="${labelW - 10}" y="${cy + 4}" text-anchor="end" font-size="12.5" class="ink-secondary">${esc(a.name)} <tspan class="ink-muted" font-size="10.5">${a.abbr}</tspan></text>`);
     p.push(`<path d="M${labelW},${cy - barH / 2} h${w - rr} a${rr},${rr} 0 0 1 ${rr},${rr} v${barH - 2 * rr} a${rr},${rr} 0 0 1 ${-rr},${rr} h${-(w - rr)} z" fill="${BAND[k].color}" class="bar"/>`);
-    p.push(`<text x="${labelW + w + 7}" y="${cy + 4}" font-size="12" font-weight="600" class="ink-primary num score">${a.score}</text>`);
+    p.push(`<text x="${labelW + w + 7}" y="${cy + 4}" font-size="12" font-weight="600" class="ink-primary num score">${a.score}<tspan class="delta" font-weight="500" font-size="10.5" dx="5"></tspan></text>`);
     p.push(`<text x="${chipX}" y="${cy + 4}" font-size="11" class="ink-secondary bandchip">${BAND[k].icon} ${BAND[k].label}</text>`);
     p.push('</g>');
   });
@@ -339,6 +383,12 @@ figcaption { color:var(--ink-muted); font-size:12.5px; margin-top:8px; }
   font-size:12px; color:var(--ink-muted); font-variant-numeric:tabular-nums; }
 #hist-label { font-size:13px; font-weight:600; color:var(--ink-2); text-align:center; }
 svg .row.nohist { opacity:.35; }
+svg .delta.up { fill:#0ca30c; } svg .delta.down { fill:#d03b3b; }
+#hist-changes { margin:12px 0 0; font-size:13px; color:var(--ink-2); }
+#hist-changes .chg { display:grid; grid-template-columns:7.5em minmax(0,1fr); gap:2px 10px; margin:4px 0; }
+#hist-changes .chg b { color:var(--ink); font-weight:600; }
+#hist-changes ul { margin:0; padding:0; list-style:none; } #hist-changes li { margin:1px 0; }
+#hist-changes .none { color:var(--ink-muted); }
 svg .row .bar, svg .row .score, svg .row .bandchip { transition:opacity .1s; }
 #tooltip { position:fixed; display:none; z-index:10; background:var(--surface); color:var(--ink);
   border:1px solid var(--ring); border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,.18);
@@ -376,8 +426,9 @@ ${aspects.map(a => `<a style="padding-left:22px" href="#aspect-${a.abbr}">${esc(
   ${frames ? `<div class="timeline">
     <input type="range" id="histrange" min="0" max="${frames.length - 1}" step="1" value="${frames.length - 1}" aria-label="Review history position (${frames.length} reviews, latest selected)">
     <div class="timeline-meta"><span>${esc(frames[0].date)}</span><span id="hist-label"></span><span>${esc(frames[frames.length - 1].date)}</span></div>
-  </div>` : ''}
-  <figcaption>Aspects in fixed catalog order (comparable across reviews). Bands: ≥8 ship · 4–7 schedule fixes · ≤3 do not ship. Exact values and finding IDs in the summary table below; hover a row for its open findings.${frames ? ' Drag the timeline to replay earlier reviews — open-finding detail is tracked only for the latest.' : ''}</figcaption>
+  </div>
+  <div id="hist-changes" aria-live="polite"></div>` : ''}
+  <figcaption>Aspects in fixed catalog order (comparable across reviews). Bands: ≥8 ship · 4–7 schedule fixes · ≤3 do not ship. Exact values and finding IDs in the summary table below; hover a row for its open findings.${frames ? ' Drag the timeline to replay earlier reviews: each step shows the score change against the review before it and the findings that review resolved, found or reopened.' : ''}</figcaption>
   </figure>
 </section>
 
@@ -413,13 +464,31 @@ function applyFrame(i) {
     bar.setAttribute('fill', b.color);
     const num = row.querySelector('.score');
     num.setAttribute('x', GEO.labelW + w + 7);
-    num.textContent = s;
     row.querySelector('.bandchip').textContent = b.icon + ' ' + b.label;
+    const prev = i > 0 ? FRAMES[i - 1].scores[row.dataset.abbr] : undefined, d = row.querySelector('.delta');
+    num.firstChild.nodeValue = s;
+    d.textContent = prev === undefined || prev === s ? '' : (s > prev ? '▲' : '▼') + Math.abs(s - prev);
+    d.setAttribute('class', 'delta ' + (prev === undefined || prev === s ? '' : s > prev ? 'up' : 'down'));
     row.dataset.curScore = s;
     row.dataset.curBand = b.icon + ' ' + b.label;
   }
+  renderChanges(i);
   const label = document.getElementById('hist-label');
   if (label) label.textContent = f.date + ' @ ' + f.hash + ' · avg ' + (f.avg || '—') + (atLatest ? ' (latest)' : '');
+}
+const escH = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const TIERS = { C: 'critical', M: 'major', m: 'minor' };
+function renderChanges(i) {
+  const box = document.getElementById('hist-changes');
+  if (!box) return;
+  const f = FRAMES[i];
+  if (i === 0) { box.innerHTML = '<div class="none">First review in the history: every finding open here was found by it.</div>'; return; }
+  const list = (xs) => xs.length
+    ? '<ul>' + xs.map(x => '<li><a class="xref" href="#' + x.id + '">' + x.id + '</a> · ' + TIERS[x.tier] + ' — ' + escH(x.title) + '</li>').join('') + '</ul>'
+    : '<span class="none">none</span>';
+  box.innerHTML = '<div class="chg"><b>Resolved (' + f.resolved.length + ')</b>' + list(f.resolved) + '</div>' +
+    '<div class="chg"><b>Found (' + f.found.length + ')</b>' + list(f.found) + '</div>' +
+    (f.reopened.length ? '<div class="chg"><b>Reopened (' + f.reopened.length + ')</b>' + list(f.reopened) + '</div>' : '');
 }
 const range = document.getElementById('histrange');
 if (range && FRAMES) { range.addEventListener('input', () => applyFrame(+range.value)); applyFrame(FRAMES.length - 1); }
@@ -437,7 +506,7 @@ for (const row of rows) {
     } else {
       tip.innerHTML = '<div class="t-head">' + d.name + ' (' + d.abbr + ') — ' + (d.curScore || d.score) + '/10</div>' +
         '<div class="t-sub">' + (d.curBand || d.band) + '</div>' +
-        '<div class="t-sub">open findings are listed only for the latest review</div>';
+        '<div class="t-sub">open: ' + ((FRAMES[+range.value].open || {})[d.abbr] || []).join(', ') + '</div>';
     }
     tip.style.display = 'block';
     const pad = 14, vw = window.innerWidth;

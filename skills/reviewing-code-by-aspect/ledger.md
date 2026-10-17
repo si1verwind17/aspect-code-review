@@ -34,7 +34,11 @@ them. Each finding records: severity, isolated/widespread, title,
 occurrence list (`file:line`), the worksheet line (`reach · residue ·
 signal`) the tier was read from, the evidence its class requires,
 cross-refs, and status (open / open, reopened @hash / resolved @hash /
-accepted-by-override).
+accepted-by-override). A finding an incremental review adds carries a
+`- Status: open, found @<hash>` line (a reopened one `open, reopened
+@<hash>`); a finding without one dates from the first review in History.
+These markers and the archive's `resolved @<hash>` are what lets a view
+replay which findings each review resolved and found.
 
 ## Hygiene — the document must not grow without bound
 
@@ -142,11 +146,15 @@ existing `.html` or `.json` means no render unless the user requests one.
   addition over the markdown is a threshold-banded score chart (aspects in
   catalog order, bands ≥8 ship · 4–7 schedule fixes · ≤3 do not ship, band
   icons and labels on every row so color never carries the band alone) with
-  a history slider when the History table has more than one row. Chart
-  data is parsed from the ledger's own summary table and cannot drift from
-  it.
+  a history slider when the History table has more than one row. Each
+  slider step shows the score change against the review before it and the
+  findings that review resolved, found or reopened, read from the status
+  markers above. Chart data is parsed from the ledger's own summary table
+  and cannot drift from it.
 - **JSON** — `node <skill>/scripts/render_review.mjs <ledger>.md --json
   [<out>.json]` emits the summary table, open findings (ID, aspect, tier,
-  widespread, title, occurrences), candidates, and history rows for CI
-  gates, dashboards, or a fix task that wants to pick findings by ID.
+  widespread, title, occurrences), candidates, and history rows (scores,
+  plus the findings each review resolved, found or reopened, and those open
+  at it) for CI gates, dashboards, or a fix task that wants to pick
+  findings by ID.
   Omitting `<out>` writes to stdout.

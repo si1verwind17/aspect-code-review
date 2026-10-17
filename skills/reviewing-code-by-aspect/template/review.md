@@ -88,8 +88,9 @@ _None yet._
 ## Open findings
 
 Severity: C = critical, M = major, m = minor; (w) = widespread (counts
-double). All findings open @ <hash — advance every review; finding bodies
-stay pinned to their discovery hash>. Aspect sections stay in catalog order
+double). Findings open @ <hash — advance every review>. A finding body
+stays pinned to its discovery hash: <first review's hash> unless its Status
+line says `found @<hash>`. Aspect sections stay in catalog order
 (same as the summary table); a `---` rule before each aspect header keeps
 the section boundary visible mid-scroll.
 
@@ -98,6 +99,8 @@ the section boundary visible mid-scroll.
 ### <Aspect name> (<ABBR>) — <score>/10 · <count> open
 
 **<ABBR>-<NNN> · <C|M|m> · <isolated|widespread> — <title>**
+- <Status: open, found @<hash> — only on a finding an incremental review
+  added; `open, reopened @<hash>` on a reopened one>
 - `<file:line>` <occurrence list — one finding, many occurrences, never one
   finding per occurrence>
 - Worksheet: reach <caller + condition, or *latent*> · residue

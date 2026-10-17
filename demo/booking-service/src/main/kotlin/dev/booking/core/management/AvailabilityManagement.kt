@@ -53,7 +53,8 @@ sealed interface ManagementOutcome {
 
 interface AvailabilityAdminRepository {
     fun insertRule(providerId: Long, publicRef: UUID, draft: AvailabilityRuleDraft): Boolean
-    fun endRule(providerId: Long, ruleRef: UUID, effectiveUntil: LocalDate, now: Instant): Boolean
+    /** A null [effectiveUntil] ends the rule on the provider's local today (R14). */
+    fun endRule(providerId: Long, ruleRef: UUID, effectiveUntil: LocalDate?, now: Instant): Boolean
     fun insertException(providerId: Long, publicRef: UUID, draft: AvailabilityExceptionDraft): Boolean
     fun conflictsFor(providerId: Long, now: Instant): List<AvailabilityConflict>
 }
@@ -80,7 +81,7 @@ class AvailabilityManagementService(
             else ManagementOutcome.NotFound
         }
 
-    fun endRule(providerRef: UUID, subject: String, ruleRef: UUID, effectiveUntil: LocalDate): ManagementOutcome =
+    fun endRule(providerRef: UUID, subject: String, ruleRef: UUID, effectiveUntil: LocalDate?): ManagementOutcome =
         forProvider(providerRef, subject) { providerId ->
             if (repository.endRule(providerId, ruleRef, effectiveUntil, clock.instant())) {
                 applied(providerId, ruleRef)

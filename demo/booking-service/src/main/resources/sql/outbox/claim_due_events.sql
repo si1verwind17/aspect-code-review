@@ -8,6 +8,10 @@
 -- therefore publish the same event twice, which R29 already permits — consumers
 -- deduplicate on eventId.  Ordering still holds regardless, because a booking's
 -- next event is only ever claimed once its predecessor is marked dispatched.
+--
+-- The head is chosen BEFORE the backoff filter: picking among due events first
+-- would let N+1 through while N waits out its backoff.  A booking whose head is
+-- not yet due contributes nothing to this pass.
 SELECT oe.outbox_event_id,
        oe.event_id,
        oe.booking_id,
@@ -22,11 +26,12 @@ SELECT oe.outbox_event_id,
   JOIN event_type et ON et.event_type_id = oe.event_type_id
   JOIN booking b     ON b.booking_id = oe.booking_id
  WHERE oe.outbox_event_id IN (
-       SELECT DISTINCT ON (booking_id) outbox_event_id
-         FROM outbox_event
-        WHERE dispatched_at IS NULL
-          AND next_attempt_at <= :now::timestamptz
-        ORDER BY booking_id, outbox_event_id
+       SELECT head.outbox_event_id
+         FROM (SELECT DISTINCT ON (booking_id) outbox_event_id, next_attempt_at
+                 FROM outbox_event
+                WHERE dispatched_at IS NULL
+                ORDER BY booking_id, outbox_event_id) head
+        WHERE head.next_attempt_at <= :now::timestamptz
  )
  ORDER BY oe.outbox_event_id
  LIMIT :limit::int

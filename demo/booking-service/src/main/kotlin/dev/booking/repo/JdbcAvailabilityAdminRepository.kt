@@ -47,7 +47,7 @@ class JdbcAvailabilityAdminRepository(
     override fun endRule(
         providerId: Long,
         ruleRef: UUID,
-        effectiveUntil: LocalDate,
+        effectiveUntil: LocalDate?,
         now: Instant,
     ): Boolean =
         jdbc.sql(endRuleSql)

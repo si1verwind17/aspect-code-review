@@ -268,6 +268,24 @@ class BookingLifecycleIT {
     }
 
     @Test
+    fun `an event waiting out its backoff holds back the booking's later events`() {
+        val ref = heldBooking()
+        lifecycle.approve(ref, "sub-owner")
+        // Far enough ahead that every event's default next_attempt_at is due.
+        val later = Instant.parse("2100-01-01T00:00:00Z")
+        val first = outbox.claimDue(later, 10).single()
+        assertEquals("BookingHeld", first.eventType, "only the oldest event per booking is claimed")
+
+        outbox.recordFailure(first.outboxEventId, "broker down", later.plusSeconds(60), later)
+
+        assertTrue(
+            outbox.claimDue(later, 10).isEmpty(),
+            "R29: BookingConfirmed must not be sent while BookingHeld is unsent",
+        )
+        assertEquals(listOf("BookingHeld"), outbox.claimDue(later.plusSeconds(60), 10).map { it.eventType })
+    }
+
+    @Test
     fun `the relay publishes committed events and marks them dispatched`() {
         heldBooking()
         val published = mutableListOf<PendingEvent>()

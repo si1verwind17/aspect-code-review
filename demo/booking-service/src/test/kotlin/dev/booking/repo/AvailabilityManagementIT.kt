@@ -192,6 +192,23 @@ class AvailabilityManagementIT {
             "the booking now sits outside published availability and must be reported",
         )
     }
+
+    @Test
+    fun `ending a rule without a date ends it on the provider's local today`() {
+        jdbc.sql("UPDATE provider SET timezone = 'America/Los_Angeles'").update()
+        val ruleRef = (publishWorkingDay() as ManagementOutcome.Applied).ref
+        // 03:00Z on 09-02 is still the evening of 09-01 in Los Angeles.
+        val evening = Clock.fixed(Instant.parse("2026-09-02T03:00:00Z"), ZoneOffset.UTC)
+        val localManagement = AvailabilityManagementService(admin, listings, admins, evening, ids)
+
+        assertTrue(localManagement.endRule(providerRef, "sub-owner", ruleRef, null) is ManagementOutcome.Applied)
+
+        assertEquals(
+            LocalDate.parse("2026-09-01"),
+            jdbc.sql("SELECT effective_until FROM availability_rule").query(LocalDate::class.java).single(),
+            "R14: the provider's calendar day, not UTC's",
+        )
+    }
 }
 
 /** One JdbcClient for the integration tier, built through the real configuration. */

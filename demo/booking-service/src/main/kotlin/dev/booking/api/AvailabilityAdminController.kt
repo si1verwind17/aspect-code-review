@@ -6,7 +6,6 @@ import dev.booking.core.management.AvailabilityRuleDraft
 import dev.booking.core.management.ExceptionType
 import dev.booking.core.management.ManagementOutcome
 import jakarta.validation.Valid
-import java.time.LocalDate
 import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -63,7 +62,7 @@ class AvailabilityAdminController(
             providerRef,
             currentActor.require().subject,
             ruleRef,
-            request?.effectiveUntil ?: LocalDate.now(java.time.ZoneOffset.UTC),
+            request?.effectiveUntil,
         ),
         HttpStatus.OK,
     )

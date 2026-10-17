@@ -7,14 +7,11 @@ history. Finding IDs are stable and never reused. Keep the section names and
 order of this template — incremental reviews and future maintainers navigate
 by them.
 
-## Summary — 2026-10-17 @ 66308b9 (incremental review, 11 aspects, scope: diff since 4781c64)
+## Summary — 2026-10-17 @ eef5ebc (incremental review, 11 aspects, scope: diff since 66308b9)
 
-**Worst aspect(s): Logic correctness (LOG) and Requirements alignment (REQ) at 0/10.** Open criticals:
-- LOG-001 C: reschedule never checks the booking's original start, so R27 and the R6 window can be bypassed.
-- LOG-002 C: rescheduling a HELD booking renews its hold deadline.
+**Worst aspect: Requirements alignment (REQ) at 0/10.** Open criticals:
 - LOG-003 C: the outbox claim publishes event N+1 while N is in backoff.
 - LOG-004 C: ending a rule with no body uses the UTC date, not the provider's local date.
-- LOG-005 C: reschedule silently drops `resourceRef`.
 - ERR-001 C: a broker outage starves the hold-expiry and auto-complete sweeps (one scheduler thread).
 - CON-001 C: an availability edit racing a create stores a booking inside blocked time and leaves it off the R20 conflict list.
 - REQ-001 C: a provider can cancel without the reason R7 requires.
@@ -22,11 +19,11 @@ by them.
 - REQ-003 C: BookingCompleted does not say whether the system or the provider completed it (UC12).
 - REQ-004 C: there is no erasure, export or retention (NF5).
 
-This review covered one fix commit, which gates `/internal/**` and `POST /v1/providers` on token scopes. Two findings were resolved: SEC-001 C and SEC-002 C. Security moves from 2 to 4, because its worst open findings are now three majors. Seven minors were found, all on the new gate: SEC-009, ERR-008, CMP-004, LGG-006, TSQ-014, RDB-004 and REQ-017. Both resolutions rest on SEC-009: the IdP must not grant either scope to end users. No new critical or major was proposed, so the verifier had nothing to check. Two clean-context reviewers covered the diff.
+This review covered one fix commit to reschedule. The commit refuses a started booking (R27), refuses a customer moving a confirmed booking inside the R6 window, keeps a HELD request's deadline, and passes `resourceRef` through. Three findings were resolved: LOG-001 C, LOG-002 C and LOG-005 C. Logic correctness moves from 0 to 2, with two criticals left. The new reschedule tests do not cover everything: three mutations still pass the suite, so TSQ-006 stays open with a narrower scope. Three minors were found (REQ-018, RDB-005, RDB-006). Five open findings gained an occurrence from the diff: CMP-001 (the V3 migration was edited in place), LOG-012, PAT-002, SEC-003 and LOG-008. Two clean-context reviewers covered the diff. The verification gate for TSQ is a mutation run, and each mutation stayed green.
 
 | Aspect | Score | Worst open | Open findings |
 |---|---|---|---|
-| Logic correctness (LOG) | **0** | critical | LOG-001 C, LOG-002 C, LOG-003 C, LOG-004 C, LOG-005 C, LOG-006 M, LOG-007 M, LOG-008 M, LOG-009 M, LOG-010 M, LOG-011 M, LOG-012 m, LOG-013 m |
+| Logic correctness (LOG) | **2** | critical | LOG-003 C, LOG-004 C, LOG-006 M, LOG-007 M, LOG-008 M, LOG-009 M, LOG-010 M, LOG-011 M, LOG-012 m, LOG-013 m |
 | Error handling (ERR) | **3** | critical | ERR-001 C, ERR-002 M (w), ERR-003 M, ERR-004 m, ERR-005 m, ERR-006 m, ERR-007 m (w), ERR-008 m |
 | Security (SEC) | **4** | major | SEC-003 M (w), SEC-004 M (w), SEC-005 M, SEC-006 m, SEC-007 m, SEC-008 m, SEC-009 m |
 | Code pattern (PAT) | **6** | major | PAT-001 M, PAT-002 m, PAT-003 m, PAT-004 m, PAT-005 m (w), PAT-006 m |
@@ -35,18 +32,18 @@ This review covered one fix commit, which gates `/internal/**` and `POST /v1/pro
 | Logging (LGG) | **9** | minor | LGG-001 m, LGG-002 m (w), LGG-003 m, LGG-004 m, LGG-005 m, LGG-006 m |
 | Test quality (TSQ) | **4** | major | TSQ-001 M, TSQ-002 M, TSQ-003 M, TSQ-004 M, TSQ-005 M, TSQ-006 M, TSQ-007 M, TSQ-008 M, TSQ-009 M, TSQ-010 m, TSQ-011 m, TSQ-012 m, TSQ-013 m, TSQ-014 m |
 | Type & null safety (TYP) | **9** | minor | TYP-001 m, TYP-002 m (w) |
-| Readability & maintainability (RDB) | **9** | minor | RDB-001 m, RDB-002 m, RDB-003 m, RDB-004 m |
-| Requirements alignment (REQ) | **0** | critical | REQ-001 C, REQ-002 C (w), REQ-003 C, REQ-004 C, REQ-005 M, REQ-006 M, REQ-007 M, REQ-008 M, REQ-009 M, REQ-010 M, REQ-011 M, REQ-012 m (w), REQ-013 m, REQ-014 m, REQ-015 m, REQ-016 m, REQ-017 m |
+| Readability & maintainability (RDB) | **9** | minor | RDB-001 m, RDB-002 m, RDB-003 m, RDB-004 m, RDB-005 m, RDB-006 m |
+| Requirements alignment (REQ) | **0** | critical | REQ-001 C, REQ-002 C (w), REQ-003 C, REQ-004 C, REQ-005 M, REQ-006 M, REQ-007 M, REQ-008 M, REQ-009 M, REQ-010 M, REQ-011 M, REQ-012 m (w), REQ-013 m, REQ-014 m, REQ-015 m, REQ-016 m, REQ-017 m, REQ-018 m |
 
 Rows stay in catalog order (the History table's column order), never sorted
 by score — so any two reviews line up row-for-row. The worst aspects are
 named in the prose above, not by reordering the table.
 
-Average (trend only, never the headline): **4.7**.
+Average (trend only, never the headline): **4.9**.
 
 ## Review scope
 
-Incremental review at 66308b9 (clean tree): the diff since 4781c64 for all 11 aspects. Five files were touched: `build.gradle.kts`, `api/InternalController.kt`, `core/listing/ListingService.kt`, `sys/SecurityConfig.kt` and the new `sys/SecurityConfigTest.kt`. The base 4781c64 is the service's own repository at the first review. Its tree is the one this repository holds at c51e603, which the diff used. Findings outside the diff are carried forward from the full review at 4781c64, which covered:
+Incremental review at eef5ebc (clean tree): the diff since 66308b9 for all 11 aspects. Five files were touched: `ddl/03-functions.sql` (`fn_reschedule_booking`), `api/BookingController.kt`, `core/booking/BookingLifecycleService.kt`, `sys/CoreConfig.kt` and `repo/BookingLifecycleIT.kt`. The first review's hash, 4781c64, is the service's own repository; its tree is the one this repository holds at c51e603. Later hashes are commits in this repository. Findings outside the diff are carried forward from the full review at 4781c64, which covered:
 - `src/main/kotlin/`
 - `src/main/resources/` (33 SQL statements and `application.yaml`)
 - `docs/backend-design/ddl/*.sql`, which is the Flyway migration source and therefore code
@@ -82,7 +79,7 @@ bind future reviews.
   - The schema reaches the database through Flyway at every pod startup, from migrations generated out of `ddl/` (`build.gradle.kts:64-80`).
 - **Tests**: JUnit 5, in three tiers: pure unit tests, hand-faked orchestration tests, and `*IT` tests against real PostgreSQL (Testcontainers, or `BOOKING_TEST_JDBC_URL`).
   - The command `./gradlew test --offline` works here.
-  - Baseline @4781c64: 72 tests, 5 failing. At 66308b9 (amended): 77 tests, the same 5 failing. ApplicationContextIT fails 3 times (TSQ-009) and the BookingLifecycleIT relay pair fails twice (TSQ-001).
+  - Baseline @4781c64: 72 tests, 5 failing. At eef5ebc (amended): 81 tests, the same 5 failing. ApplicationContextIT fails 3 times (TSQ-009) and the BookingLifecycleIT relay pair fails twice (TSQ-001).
 - **Exclusions**:
   - `build/`, `.idea/` and the Gradle wrapper
   - the documentation tooling: `docs/backend-design/build-review.mjs`, `package*.json` and `design-review.html` (owner: not a module)
@@ -118,7 +115,7 @@ bind future reviews.
   - I6 (transitions are rows): held — `ddl/03:437-445`.
   - Hazard, `POST /v1/providers` self-service: owner declined; filed as SEC-002, resolved @66308b9.
   - Hazard, gate consumer with no dead-letter: owner declined, filed as ERR-005 (latent).
-  - Not exercised: the internal contacts endpoint has no legitimate caller (SEC-001, resolved @66308b9, rested its reach on an untrusted caller); `resource.idp_subject` is read by nothing (REQ-010, SEC-007); the reschedule resource-change plumbing is unused, but the dropped field sits on the exercised reschedule (LOG-005); nothing crosses the Kafka edges (ERR-004/005/006, SEC-008, TYP-001 latent); `AWAITING_PAYMENT` is unreachable.
+  - Not exercised: the internal contacts endpoint has no legitimate caller (SEC-001, resolved @66308b9, rested its reach on an untrusted caller); `resource.idp_subject` is read by nothing (REQ-010, SEC-007); the reschedule resource-change plumbing is wired since eef5ebc (LOG-005 resolved); nothing crosses the Kafka edges (ERR-004/005/006, SEC-008, TYP-001 latent); `AWAITING_PAYMENT` is unreachable.
 - **External-state journeys**: 11 operations enumerated.
   - Operations: create (including replay), cancel, approve, decline, attendance, reschedule, the expiry sweep, the auto-complete sweep, gate consume, relay publish/mark/record, provider setup writes, and availability rule and exception writes.
   - Empty or problematic cells:
@@ -152,26 +149,14 @@ _None yet._
 ## Open findings
 
 Severity: C = critical, M = major, m = minor; (w) = widespread (counts
-double). Findings open @ 66308b9. A finding body stays pinned to its
+double). Findings open @ eef5ebc. A finding body stays pinned to its
 discovery hash: 4781c64 unless its Status line says `found @<hash>`. Aspect sections stay in catalog order (same as the summary
 table); a `---` rule before each aspect header keeps the section boundary
 visible mid-scroll.
 
 ---
 
-### Logic correctness (LOG) — 0/10 · 13 open
-
-**LOG-001 · C · isolated — Reschedule never checks the original start, so R27 (and the R6 window) can be bypassed**
-- `docs/backend-design/ddl/03-functions.sql:558-564` (only a terminal check), `:614-630` (row rewritten, then fn_transition_booking re-reads the new start), `:464-481`; permitting rules at `04-seed-lookups.sql:57-59`
-- Worksheet: reach customer or provider holding a CONFIRMED booking, via `POST /v1/bookings/{ref}/reschedule` · residue external · signal none → critical
-- Intent: R27 ("After start, the only remaining transitions are the attendance ones"), and the comment at `:470`. Failing input (probe): a booking for 11-02 10:00Z, rescheduled at 11-02 12:00Z to 11-09, stays CONFIRMED and moves. A booking inside the window: direct cancel → BK007; reschedule out of the window → succeeds; cancel → succeeds.
-- Cross-ref: REQ (R27, UC8).
-
-**LOG-002 · C · isolated — Rescheduling a HELD booking renews its hold deadline**
-- `ddl/03-functions.sql:603-620`; `core/booking/GatePolicy.kt:27-34`
-- Worksheet: reach customer at an approval-mode provider · residue external (capacity held past the gate TTL, renewable until start; PD5 sets no reschedule limit) · signal none → critical
-- Intent: requirements §4.1, HELD→HELD: "new time only, hold reason and deadline unchanged". Failing input: a hold created 11-01 08:00Z has deadline 11-02 08:00Z; a reschedule at 11-02 07:59Z moves the deadline to 11-03 07:59Z.
-- Cross-ref: REQ.
+### Logic correctness (LOG) — 2/10 · 10 open
 
 **LOG-003 · C · isolated — Outbox claim applies backoff before picking each booking's oldest event, so N+1 is published while N waits**
 - `src/main/resources/sql/outbox/claim_due_events.sql:24-30`; `record_failure.sql:5`; `core/outbox/OutboxRelay.kt:39-44`
@@ -184,12 +169,6 @@ visible mid-scroll.
 - Worksheet: reach provider admin ending a rule with no body while the provider-local date differs from UTC · residue external (rule persisted one day long or short) · signal none → critical
 - Intent: R14. Failing input: an America/Los_Angeles provider ends a rule at 2026-10-17 18:00 PDT. The stored date is 2026-10-18, so local Oct 18 still offers 29 slots. Pacific/Auckland loses today early.
 - Cross-ref: PAT-003, LOG-009.
-
-**LOG-005 · C · isolated — Reschedule accepts `resourceRef` on the wire and silently drops it**
-- `api/BookingDtos.kt:45`; `api/BookingController.kt:88` (`newResourceId = null`); `ddl/03-functions.sql:569` (COALESCE to the old resource); dead plumbing at `BookingLifecycleService.kt:72,79`, `JdbcBookingLifecycle.kt:73`
-- Worksheet: reach any caller sending `resourceRef` on the exercised reschedule operation · residue external (booking moved to the new time on the old resource; event emitted) · signal none (TransitionResponse carries no resource) → critical
-- Failing input: `{startsAt:T, resourceRef:R2}` for a booking on R1 → booking on R1@T, 200. Verifier: the domain-context not-exercised entry describes this defect's own mechanism, so the path is not latent.
-- Cross-ref: CMP, REQ (UC8), RDB (dead plumbing).
 
 **LOG-006 · M · isolated — Availability search applies neither R4 lead time nor R5 horizon and offers past starts**
 - `ddl/03-functions.sql:84-156` (comment `:156` "R4 and R5 are applied by the caller"); `core/availability/AvailabilityService.kt:22-27`; `sql/availability/search_availability.sql:1-2`
@@ -207,6 +186,7 @@ visible mid-scroll.
 - Worksheet: reach customer at an approval-mode provider whose start is within 24 h · residue request (BK007; the hold persists) · signal caller → major
 - Intent: UC6, and requirements §4.1, where HELD→CANCELLED needs only "Before start time" (R6 sits on the CONFIRMED row).
 - Cross-ref: REQ.
+- Still open @eef5ebc: `:473-480` still applies the window to HELD cancels. The new reschedule comment (`ddl/03:571-574`) says a HELD request has no window, so the two paths now disagree.
 
 **LOG-009 · M · isolated — A rule with a future effective_from cannot be ended; the attempt returns 500**
 - `api/AvailabilityAdminController.kt:66`; `sql/management/end_availability_rule.sql:3-9`; CHECK `availability_rule_dates_forward` at `ddl/01-create-tables.sql:239`
@@ -224,8 +204,9 @@ visible mid-scroll.
 - Evidence: key K for slot T1, then `POST {startsAt:T2}` with K → 200 with booking A(T1). No booking exists at T2, and the body does not show the mismatch.
 - Cross-ref: CMP.
 
-**LOG-012 · m · isolated — Approval or gate resolution accepted after hold_deadline until the next sweep**
+**LOG-012 · m · isolated — Approval, gate resolution or reschedule accepted after hold_deadline until the next sweep**
 - `ddl/03-functions.sql:464-466` (checks starts_at only); sweep interval `application.yaml:54`. With ERR-001 the window can stretch to a whole relay pass.
+- Second occurrence @eef5ebc: `fn_reschedule_booking` (`ddl/03-functions.sql:619-623`) moves a HELD booking whose deadline has already lapsed, and returns 200. The sweep expires it within 30 s.
 
 **LOG-013 · m · isolated — Ending a rule with an explicit date can extend an already-ended rule**
 - `sql/management/end_availability_rule.sql:3-9` has no guard; `{effectiveUntil: 2099-01-01}` revives a rule ended in the past.
@@ -287,6 +268,7 @@ visible mid-scroll.
 **SEC-003 · M · widespread — Raw PostgreSQL error text, with PL/pgSQL frames and internal ids, returned to clients**
 - `sys/BookingSqlExceptionTranslator.kt:40`; `repo/RuleViolations.kt:17`; `api/BookingOutcomeResponder.kt:83`; RAISE texts with bigint ids at `ddl/03-functions.sql:250, 423, 429, 560`
 - Evidence (probe): BK001 detail = "ERROR: the resource is occupied … Where: PL/pgSQL function fn_create_booking(bigint,…) line 53 at RAISE". BK008 also acts as a cross-provider existence oracle for resource refs (`find_resource_id.sql` is unscoped). Weakened defense → major; widespread: every BK rejection on every write path.
+- Added journey @eef5ebc: a reschedule onto another provider's real resource returns the BK008 text with internal ids, while an unknown ref answers "no such resource" (`BookingLifecycleService.kt:83-85`).
 - Cross-ref: CMP, ERR.
 
 **SEC-004 · M · widespread — Public refs drawn from a non-cryptographic PRNG**
@@ -324,6 +306,7 @@ visible mid-scroll.
 
 **PAT-002 · m · isolated — Repo adapter re-implements the reschedule state decision**
 - `repo/JdbcBookingLifecycle.kt:82-83` duplicates `ddl/03-functions.sql:603-606`; `fn_reschedule_booking` returns no state.
+- Wider @eef5ebc: the SQL now has a third branch (HELD stays HELD whatever the gate, `ddl/03-functions.sql:619-628`), and the Kotlin still infers the state from the gate (`JdbcBookingLifecycle.kt:82-83`). They diverge only if a provider's confirmation mode changes while it has a HELD booking, and no API changes the mode. The `COMMENT ON FUNCTION` at `ddl/03:660` is now stale.
 
 **PAT-003 · m · isolated — Clock-derived policy default computed in the controller**
 - `api/AvailabilityAdminController.kt:66` reads the system clock, against `sys/TimeAndIdConfig.kt:8-12`. Cross-ref LOG-004.
@@ -395,6 +378,7 @@ visible mid-scroll.
   - A new `05-x.sql` is copied without the V prefix and silently ignored.
   - Only an undocumented hand-named `V5__x.sql` works.
 - Worksheet: reach the first schema change after deployment · residue process (all pods fail at startup, on the README route) · signal operator (startup crash) → major. The data-design and new-file routes leave the change unapplied with no signal (external + none). The verifier confirmed the documents disagree, so the tier is read from the README route.
+- Still open @eef5ebc, now exercised: that commit edited `fn_reschedule_booking` inside `ddl/03-functions.sql`, which is the generated V3. A database already at V3 fails checksum validation at startup. No database has been deployed.
 
 **CMP-002 · M · isolated — Availability search with an unknown `resourceRef` silently widens to all resources**
 - `sql/availability/search_availability.sql:13` (unknown ref → NULL); `ddl/03-functions.sql:88, 116`
@@ -460,8 +444,16 @@ Every TSQ major below was confirmed by applying its named mutation to production
 **TSQ-005 · M · isolated — The cancel path, including R6 and R27, has no test**
 - `ddl/03-functions.sql:468-481`; `BookingLifecycleService.kt:51-56` is never called by a test. Mutation: R6 check → `IF false` (`:476`) → green. Worksheet: reach a customer cancelling inside the window · residue external · signal none → major.
 
-**TSQ-006 · M · isolated — Reschedule (UC8) has no test**
-- `ddl/03-functions.sql:535-631`. Mutation: old-session release → `PERFORM 1` (`:579-580`) → green. Worksheet: reach any reschedule · residue external (capacity leak or double hold) · signal none → major. Cross-ref: LOG-001, LOG-002.
+**TSQ-006 · M · isolated — Reschedule (UC8) tests leave capacity release, R6 actor scoping and the deadline clamp unpinned**
+- `ddl/03-functions.sql:535-660`; tests at `repo/BookingLifecycleIT.kt` (four reschedule tests since eef5ebc)
+- Worksheet: reach any reschedule · residue external (capacity leak or double hold; provider moves refused; a hold outliving its start) · signal none → major
+- Mutations, each run in a scratch copy, each green apart from the 2 baseline relay failures:
+  - old-session release → `PERFORM 1` (`:579-580` @4781c64)
+  - `IF p_actor_type_id = 1 AND b.booking_state_id = 2` → `IF b.booking_state_id = 2` (`:576` @eef5ebc): no provider reschedule of a CONFIRMED booking and no customer reschedule outside the window is tested
+  - `LEAST(b.hold_deadline, v_s_starts)` → `b.hold_deadline` (`:627` @eef5ebc): the only HELD test moves to a later start, where the clamp is a no-op
+- The `>=` and `>` boundaries and a provider rescheduling a HELD booking are untested.
+- Narrowed @eef5ebc: R27, the customer window, the kept deadline and the named resource are now pinned.
+- Cross-ref: LOG-001, LOG-002 (resolved).
 
 **TSQ-007 · M · isolated — Tenancy filters in the listing SQL are untested**
 - `sql/listing/customer_bookings.sql:19`, `provider_bookings.sql:18`, `booking_contacts.sql:12`; ListingServiceTest stubs the repository. Mutation: `WHERE b.customer_id = :customerId` → `WHERE :customerId IS NOT NULL` → green. Worksheet: reach any customer listing · residue external (cross-customer disclosure) · signal none → major.
@@ -506,7 +498,7 @@ Every TSQ major below was confirmed by applying its named mutation to production
 
 ---
 
-### Readability & maintainability (RDB) — 9/10 · 4 open
+### Readability & maintainability (RDB) — 9/10 · 6 open
 
 **RDB-001 · m · isolated — Hard-coded lookup ids in plpgsql**
 - `ddl/03-functions.sql:67, 72, 261, 357, 360, 473, 502-504, 604, 606, 650, 676, 678`. Drift risk is settled by `04-seed-lookups.sql:1-2`; only readability remains.
@@ -521,9 +513,17 @@ Every TSQ major below was confirmed by applying its named mutation to production
 - Status: open, found @66308b9
 - `sys/SecurityConfig.kt:37-38`, `src/test/kotlin/dev/booking/sys/SecurityConfigTest.kt:57`: an unnamed convention written in two places.
 
+**RDB-005 · m · isolated — The R27 and R6 predicates are written twice**
+- Status: open, found @eef5ebc
+- `ddl/03-functions.sql:569-583` (reschedule) restates `:469-480` (cancel). A change to the window rule has to be made in both places.
+
+**RDB-006 · m · isolated — Second-resource test setup hard-codes the fixture date**
+- Status: open, found @eef5ebc
+- `repo/BookingLifecycleIT.kt`, the named-resource test, repeats `DATE '2026-09-02'` instead of deriving it from `slot`.
+
 ---
 
-### Requirements alignment (REQ) — 0/10 · 17 open
+### Requirements alignment (REQ) — 0/10 · 18 open
 
 **REQ-001 · C · isolated — Provider cancellation accepted without a reason (R7, UC7)**
 - `api/BookingDtos.kt:35`; `api/BookingController.kt:69-76`; `core/booking/BookingLifecycleService.kt:51-56`; `ddl/03-functions.sql:468-481, 500-516`; the column comment at `ddl/01:397` claims "mandatory … (R7)" but nothing enforces it
@@ -591,6 +591,11 @@ Every TSQ major below was confirmed by applying its named mutation to production
 - An operator reading the documents cannot learn which scopes to issue.
 - Cross-ref: SEC-009.
 
+**REQ-018 · m · isolated — The reschedule window rule exists only in a SQL comment**
+- Status: open, found @eef5ebc
+- `ddl/03-functions.sql:571-583`: a customer may not reschedule a CONFIRMED booking inside the R6 window. UC8 and requirements §4.1 do not state it.
+- Cross-ref: LOG-008.
+
 ## Credited as intentional (recorded to prevent re-litigation)
 
 - Outbox at-least-once delivery: an unlocked claim, a republish after a lost ack or a timed-out send, and duplicates across relays. Evidence: `claim_due_events.sql:6-10` and domain-context §7 ("consumers must dedupe on eventId"). This covers duplicates only, not reordering (LOG-003).
@@ -610,6 +615,9 @@ reintroduced defect reopens its ID here (moves back to Open findings with
 
 - SEC-001 · C · Internal contacts endpoint serves any booking's customer PII to any token holder (I5 violated) · `api/InternalController.kt`, `core/listing/ListingService.kt`, `repo/JdbcListingRepository.kt` · resolved @66308b9
 - SEC-002 · C · `POST /v1/providers` has no authorization and makes the caller the first admin (owner declined, domain-context §7) · `api/ProviderSetupController.kt`, `core/management/ProviderSetup.kt`, `sql/management/insert_provider.sql` · resolved @66308b9
+- LOG-001 · C · Reschedule never checks the original start, so R27 (and the R6 window) can be bypassed · `docs/backend-design/ddl/03-functions.sql`, `04-seed-lookups.sql` · resolved @eef5ebc
+- LOG-002 · C · Rescheduling a HELD booking renews its hold deadline · `ddl/03-functions.sql`, `core/booking/GatePolicy.kt` · resolved @eef5ebc
+- LOG-005 · C · Reschedule accepts `resourceRef` on the wire and silently drops it · `api/BookingDtos.kt`, `api/BookingController.kt`, `ddl/03-functions.sql` · resolved @eef5ebc
 
 ## History
 
@@ -617,5 +625,6 @@ reintroduced defect reopens its ID here (moves back to Open findings with
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-10-17 | 4781c64 | 0 | 3 | 2 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | LOG, REQ (0) | 4.5 |
 | 2026-10-17 | 66308b9 | 0 | 3 | 4 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | LOG, REQ (0) | 4.7 |
+| 2026-10-17 | eef5ebc | 2 | 3 | 4 | 6 | 3 | 5 | 9 | 4 | 9 | 9 | 0 | REQ (0) | 4.9 |
 
-Per-aspect baselines (diff basis for the next incremental review): LOG, ERR, SEC, PAT, CON, CMP, LGG, TSQ, TYP, RDB, REQ @ 66308b9, whole repo.
+Per-aspect baselines (diff basis for the next incremental review): LOG, ERR, SEC, PAT, CON, CMP, LGG, TSQ, TYP, RDB, REQ @ eef5ebc, whole repo.

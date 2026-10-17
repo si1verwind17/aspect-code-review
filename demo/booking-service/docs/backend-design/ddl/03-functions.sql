@@ -324,6 +324,13 @@ BEGIN
         END IF;
     END IF;
 
+    -- R20 race: availability edits lock the resource row FOR UPDATE, so holding
+    -- it FOR SHARE until commit means an edit either lands before the check
+    -- below reads the rules (and this booking is refused) or waits for this
+    -- booking to commit (and its conflict list then includes it).  The lock is
+    -- taken here because fn_assert_bookable is STABLE and may not lock.
+    PERFORM 1 FROM resource WHERE resource_id = p_resource_id FOR SHARE;
+
     SELECT a.provider_id, a.ends_at, a.duration_minutes, a.capacity,
            a.buffer_before_minutes, a.buffer_after_minutes, a.approval_hold_ttl_minutes
       INTO v_provider_id, v_ends_at, v_dur, v_cap, v_bb, v_ba, v_hold_ttl
@@ -586,6 +593,9 @@ BEGIN
       INTO v_service_id, v_old_sess, v_resource
       FROM session s WHERE s.session_id = b.session_id;
     v_resource := COALESCE(p_new_resource_id, v_resource);
+
+    -- The same R20 lock as fn_create_booking, on the resource being moved onto.
+    PERFORM 1 FROM resource WHERE resource_id = v_resource FOR SHARE;
 
     -- R10: identical checks to a new booking, by construction.
     SELECT * INTO v_a FROM fn_assert_bookable(v_service_id, v_resource, p_new_starts_at,

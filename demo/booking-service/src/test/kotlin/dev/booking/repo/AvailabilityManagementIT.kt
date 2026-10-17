@@ -2,6 +2,7 @@ package dev.booking.repo
 
 import dev.booking.core.booking.ActorType
 import dev.booking.core.booking.BookingOutcome
+import dev.booking.core.booking.BookingRule
 import dev.booking.core.booking.CreateBookingCommand
 import dev.booking.core.booking.CustomerContact
 import dev.booking.core.management.AvailabilityExceptionDraft
@@ -19,12 +20,16 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneOffset
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import java.util.random.RandomGenerator
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import org.springframework.jdbc.core.simple.JdbcClient
+import org.springframework.jdbc.datasource.SingleConnectionDataSource
 
 /**
  * Tier 3 — UC2, UC3 and above all R20.
@@ -208,6 +213,92 @@ class AvailabilityManagementIT {
             jdbc.sql("SELECT effective_until FROM availability_rule").query(LocalDate::class.java).single(),
             "R14: the provider's calendar day, not UTC's",
         )
+    }
+
+    @Test
+    fun `a block racing an uncommitted booking waits for it and then reports it`() {
+        publishWorkingDay()
+        val customerId = customers.findOrCreate("sub-customer", CustomerContact(null, null, null))
+        val serviceId = assertNotNull(bookings.findServiceContext(serviceRef)).serviceId
+        val resourceId = assertNotNull(bookings.findResourceId(resourceRef))
+        val block = AvailabilityExceptionDraft(
+            resourceRef = resourceRef,
+            type = ExceptionType.BLOCK,
+            startsAt = Instant.parse("2026-09-02T08:00:00Z"),
+            endsAt = Instant.parse("2026-09-02T12:00:00Z"),
+            reason = "equipment failure",
+        )
+
+        TestDatabase.dataSource.connection.use { conn ->
+            conn.autoCommit = false
+            val inFlight = JdbcBookingRepository(
+                JdbcClient.create(JdbcConfig().jdbcTemplate(SingleConnectionDataSource(conn, true))),
+                sql,
+            )
+            val created = inFlight.create(
+                CreateBookingCommand(
+                    customerId = customerId, serviceId = serviceId, resourceId = resourceId,
+                    startsAt = slot, gate = null, actorType = ActorType.CUSTOMER,
+                    actorSubject = "sub-customer", idempotencyKey = null, now = now,
+                    bookingRef = ids.newId(), eventId = ids.newId(),
+                ),
+            ) as BookingOutcome.Created
+
+            val edit = CompletableFuture.supplyAsync { management.addException(providerRef, "sub-owner", block) }
+            Thread.sleep(500)
+            assertTrue(!edit.isDone, "the block must wait for the booking in flight on its resource")
+            conn.commit()
+
+            val applied = edit.get(10, TimeUnit.SECONDS) as ManagementOutcome.Applied
+            assertEquals(
+                listOf(created.booking.ref), applied.conflicts.map { it.bookingRef },
+                "R20: a booking that raced the edit is reported, never stored silently inside blocked time",
+            )
+        }
+    }
+
+    @Test
+    fun `a booking racing an uncommitted block waits for it and is then refused`() {
+        publishWorkingDay()
+        val customerId = customers.findOrCreate("sub-customer", CustomerContact(null, null, null))
+        val providerId = assertNotNull(listings.findId(providerRef))
+        val command = CreateBookingCommand(
+            customerId = customerId,
+            serviceId = assertNotNull(bookings.findServiceContext(serviceRef)).serviceId,
+            resourceId = assertNotNull(bookings.findResourceId(resourceRef)),
+            startsAt = slot, gate = null, actorType = ActorType.CUSTOMER,
+            actorSubject = "sub-customer", idempotencyKey = null, now = now,
+            bookingRef = ids.newId(), eventId = ids.newId(),
+        )
+
+        TestDatabase.dataSource.connection.use { conn ->
+            conn.autoCommit = false
+            val inFlight = JdbcAvailabilityAdminRepository(
+                JdbcClient.create(JdbcConfig().jdbcTemplate(SingleConnectionDataSource(conn, true))),
+                sql,
+            )
+            assertTrue(
+                inFlight.insertException(
+                    providerId, ids.newId(),
+                    AvailabilityExceptionDraft(
+                        resourceRef = resourceRef, type = ExceptionType.BLOCK,
+                        startsAt = Instant.parse("2026-09-02T08:00:00Z"),
+                        endsAt = Instant.parse("2026-09-02T12:00:00Z"), reason = "equipment failure",
+                    ),
+                ),
+            )
+
+            val create = CompletableFuture.supplyAsync { bookings.create(command) }
+            Thread.sleep(500)
+            assertTrue(!create.isDone, "the booking must wait for the edit in flight on its resource")
+            conn.commit()
+
+            val outcome = create.get(10, TimeUnit.SECONDS)
+            assertEquals(
+                BookingRule.OUTSIDE_AVAILABILITY, (outcome as BookingOutcome.Rejected).rule,
+                "R20: the booking is judged against the committed block, not the rules before it",
+            )
+        }
     }
 }
 

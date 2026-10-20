@@ -201,6 +201,9 @@ gate and independence rule; no menu, no scores, no ledger.
 - **Re-litigating carried-forward findings.** Untouched open findings move
   forward as-is; only diff-touched files get re-checked.
 - **Double-deducting cross-referenced findings.** One home, one deduction.
+- **Leaving overlapping findings unlinked.** Run
+  `scripts/link_findings.mjs` after every full or incremental review
+  (`full-review.md` step 7), even when nothing changed.
 - **Slicing one issue into many findings.** Ten occurrences is one
   widespread finding; ten findings is how a score gets nuked by noise.
 - **Verifiers that prune by taste.** The gate removes what the code proves

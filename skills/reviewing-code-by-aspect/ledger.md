@@ -27,18 +27,20 @@ repos is part of what makes ledgers readable.
 
 ## Findings
 
-IDs are `ABBR-NNN` — aspect abbreviation, hyphen, three-digit zero-padded
-sequence, the same form in every aspect (never `SEC-3`, never `PAT-a`), and
-never reused — so incremental reviews, overrides and fix tasks can name
-them. Each finding records: severity, isolated/widespread, title,
-occurrence list (`file:line`), the worksheet line (`reach · residue ·
-signal`) the tier was read from, the evidence its class requires,
-cross-refs, and status (open / open, reopened @hash / resolved @hash /
-accepted-by-override). A finding an incremental review adds carries a
-`- Status: open, found @<hash>` line (a reopened one `open, reopened
-@<hash>`); a finding without one dates from the first review in History.
-These markers and the archive's `resolved @<hash>` are what lets a view
-replay which findings each review resolved and found.
+IDs are `ABBR-NNN` — aspect abbreviation, hyphen, three-digit
+zero-padded sequence, the same form in every aspect (never `SEC-3`,
+never `PAT-a`), and never reused — so incremental reviews, overrides and
+fix tasks can name them. Each finding records: severity,
+isolated/widespread, title, occurrence list (`file:line`), the worksheet
+line (`reach · residue · signal`) the tier was read from, the evidence
+its class requires, cross-refs (aspects, and by ID any open finding
+sharing a line with it), and status (open / open, reopened @hash /
+resolved @hash / accepted-by-override). A finding an incremental review
+adds carries a `- Status: open, found @<hash>` line (a reopened one
+`open, reopened @<hash>`); a finding without one dates from the first
+review in History. These markers and the archive's `resolved @<hash>`
+are what lets a view replay which findings each review resolved and
+found.
 
 ## Hygiene — the document must not grow without bound
 

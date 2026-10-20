@@ -79,7 +79,8 @@ throughout; this file adds what only a scored, ledgered review needs.
 6. **Review.** Fan out by cluster or run clusters inline
    (`orchestration.md`). Incremental aspects: re-check open findings whose
    files the diff touched (resolved / still open), carry untouched ones
-   forward unchanged, add new findings from the diff only. A new finding
+   forward unchanged except for step 7's links, add new findings from the
+   diff only. A new finding
    that is the same distinct issue as an archived one **reopens that ID**
    (`reopened @hash`) — the ID names the defect, not the event of finding
    it, and a regression usually earns a TSQ cross-ref. **A fix re-review
@@ -92,9 +93,23 @@ throughout; this file adds what only a scored, ledgered review needs.
 7. **Verify, then merge mechanically.** Every proposed critical or major
    passes the verification gate below before it gets an ID; its tier is
    read off the severity table from the verified worksheet line. Dedup
-   cross-referenced findings (one home aspect, one deduction), compute
-   scores by the band table, update the ledger, present the summary. No
-   model judgment in this step — that is what makes results reproducible.
+   cross-referenced findings (one home aspect, one deduction), link
+   overlapping ones, compute scores by the band table, update the
+   ledger, present the summary. No model judgment in this step — that is
+   what makes results reproducible.
+
+   **Link overlapping findings — every run, inline included, even when
+   nothing was found or resolved:** after writing the ledger, run `node
+   <skill>/scripts/link_findings.mjs <ledger>.md`. It compares the
+   occurrence lists of all open findings, carried-forward ones too; two
+   that share a line in the same file (in a cited range of at most 15
+   lines) name each other by ID in their `Cross-ref` lines — `CON-001
+   (same code, file:line)` — and a link whose finding left Open findings,
+   or no longer overlaps, is deleted. The `(same code, …)` form is the
+   script's; a link drawn by judgment uses other words (`LOG-002
+   (related: …)`). Without Node, apply that rule by hand. A link is not a duplicate: both findings keep their IDs and both
+   count. It exists so that whoever fixes one sees the other, whose fix
+   usually has to land in the same change.
 8. **Stop.** Present the summary (worst aspect first) and end. No fixing,
    no second pass, no offer-loop. Fixes are a new task the user scopes
    against named finding IDs. Regenerate any HTML/JSON view that already

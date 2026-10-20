@@ -39,13 +39,17 @@ gh skill install si1verwind17/aspect-code-review
 
 **Anything else:** copy the `skills/<name>/` directories into your agent's skills folder.
 
-No prerequisites for the skills themselves. Rendering the ledger to HTML or JSON needs Node 18 or later.
+No prerequisites for the skills themselves. Node 18 or later runs the review's two scripts: linking findings that share
+code (without Node the review applies that rule by hand) and rendering the ledger to HTML or JSON.
 
 ## Skills
 
 - [`reviewing-code-by-aspect`](skills/reviewing-code-by-aspect/SKILL.md): three modes. **Full** audits the whole repo
   or named paths and writes the scored ledger; **incremental** re-reviews the diff since each aspect's baseline;
   **quick** reviews one diff or PR and returns tiered findings with no score and no ledger.
+- [`fixing-reviewed-findings`](skills/fixing-reviewed-findings/SKILL.md): fixes named findings from the ledger on a
+  branch, together with any open finding linked to the same code, then has a fresh agent re-review each fix. Only that
+  review marks findings resolved; it stops after two rounds and leaves pushing and merging to you.
 - [`documenting-domain-context`](skills/documenting-domain-context/SKILL.md): optional, runs only when you ask.
   Writes down what the code cannot say to `docs/domain-context.md`, through a short Q&A with you. See
   [Domain context](#domain-context-optional) below.

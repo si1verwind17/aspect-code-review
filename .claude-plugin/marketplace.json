@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Agent skills for scored, documented code review by aspect, with a persistent review ledger and an optional owner-confirmed domain-context document.",
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   "plugins": [
     {
@@ -13,7 +13,7 @@
       "source": "./",
       "strict": false,
       "description": "Scored, documented code review by aspect with a persistent ledger, plus an optional owner-confirmed domain-context document the review reads when present.",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "author": {
         "name": "si1verwind17"
       },
@@ -22,6 +22,7 @@
       "category": "workflow",
       "skills": [
         "./skills/reviewing-code-by-aspect",
+        "./skills/fixing-reviewed-findings",
         "./skills/documenting-domain-context"
       ]
     }

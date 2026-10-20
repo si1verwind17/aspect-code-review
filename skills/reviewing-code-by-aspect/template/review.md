@@ -108,7 +108,8 @@ the section boundary visible mid-scroll.
 - <The evidence this finding's class requires — failing input, source→target
   path, scale/heat, per aspects.md. A claim without evidence is not a
   finding.>
-- Cross-ref: <aspects that reference this finding — one home, one deduction>
+- Cross-ref: <aspects that reference this finding — one home, one deduction;
+  and open findings sharing a line with it, by ID: `<ID> (same code, file:line)`>
 
 **Candidates (unverified, not scored)**
 - <ABBR> · <C|M> · <title> · `<file:line>` — <why verification failed or

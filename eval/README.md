@@ -41,6 +41,7 @@ proves it changes anything.
 | [3](scenarios/review/3-render-ledger.md) | rendering a ledger to HTML for people |
 | [4](scenarios/review/4-quick-pr-review.md) | a quick review of one branch: tiered findings, no score, no ledger |
 | [5](scenarios/review/5-trigger.md) | a plain review request loads only the review skill |
+| [6](scenarios/review/6-link-overlapping.md) | an incremental review links carried-forward findings that share a line |
 
 ### documenting-domain-context
 
@@ -49,6 +50,12 @@ proves it changes anything.
 | [1](scenarios/domain-context/1-first-run.md) | a first run: evidence-led interview with a simulated owner, provenance, scoped documents |
 | [2](scenarios/domain-context/2-update-mode.md) | update mode after a change: only what changed is re-asked |
 | [3](scenarios/domain-context/3-foreign-file.md) | a foreign file already at the output path |
+
+### fixing-reviewed-findings
+
+| Scenario | What it tests |
+|---|---|
+| [1](scenarios/fixing/1-fix-linked-finding.md) | a named finding fixed with its linked finding, on a branch, re-reviewed by a clean agent |
 
 ## Pending validation
 
@@ -63,11 +70,12 @@ squashed into this repository's first commit; they do not resolve here.
 
 | Scenario | Skill@ | Model | Reps | Result | Notes |
 |---|---|---|---|---|---|
-| 1 | 4199e31 | Sonnet | 3 | 57/57 | all three ran inline (economy) on the 260-line fixture |
-| 2 | 07de729 | Sonnet | 3 | 41/42 | check 13 N/A in every rep (all inline); one rep read an untouched file (check 1) |
+| 1 | draft | Sonnet | 3 | 52/57 | all inline. Residual: no rep's written execution-mode offer names the cost trade-off (check 13, 0/3); one rep skipped the scope question (check 12); one rep dropped the `---` rules between aspect sections (check 14) |
+| 2 | draft | Sonnet | 3 | 41/42 | check 13 N/A in every rep (all inline); one rep's fresh-eyes advisory named neither the cost nor a cheaper option (check 9) |
 | 3 | 72be6d1 | Sonnet | 3 | 24/24 | every rep ran the skill's script; at the older History row the page shows that review's own changes, not the latest open list |
 | 4 | 4199e31 | Sonnet | 3 | 24/24 | the suite cannot run on the host; Q4 lands as an unrun-mutation candidate, as checks 3–4 allow |
 | 5 | f34e692 | Sonnet | 3 | 3/3 | only `reviewing-code-by-aspect` loaded |
+| 6 | draft | Sonnet | 3 | 15/15 | control 12/15: links 0/3. Every rep ran `link_findings.mjs` |
 
 ### documenting-domain-context
 
@@ -76,3 +84,9 @@ squashed into this repository's first commit; they do not resolve here.
 | 1 | cfed2c6 | Sonnet | 3 | 35/48 | payments fixture. Residual: F9 never asked; unprovenanced short lines; F1 cited to code, not the README (2/3); map sent as prose (1/3); OVERVIEW's cadence offered after scoping (1/3) |
 | 2 | — | — | — | not run in this repository | |
 | 3 | — | — | — | not run in this repository | |
+
+### fixing-reviewed-findings
+
+| Scenario | Skill@ | Model | Reps | Result | Notes |
+|---|---|---|---|---|---|
+| 1 | draft | Sonnet | 3 | 18/18 | control 3/18 (scope passes unaided; linked finding, branch, commit, clean review, hand-back 0/3). Every reviewer was briefed by hash; the branch name still shows the IDs to a reviewer who lists branches |

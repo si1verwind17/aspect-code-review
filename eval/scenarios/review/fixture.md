@@ -16,6 +16,8 @@ scenario-2 fixture (stdlib only, fixed commit dates so hashes are stable) to `ba
 the commit hashes in `base-s2-hashes.json`.
 [`build_s3_fixture.py`](../../fixtures/reviewing-code-by-aspect/build_s3_fixture.py) writes the
 scenario-3 ledger repo to `base-s3/`; its grading key is in the scenario file.
+[`build_s6_fixture.py`](../../fixtures/reviewing-code-by-aspect/build_s6_fixture.py) writes the scenario-6 repo to
+`base-s6/`, built on the fixing fixture; its key is in the scenario file.
 
 Seeded defects (each maps to an aspect and expected tier):
 

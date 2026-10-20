@@ -67,7 +67,10 @@ reviewers before the next. The rendered page's timeline replays them one hash at
 | `862df06` availability edits and bookings serialise on the resource row | CON-001 | CON 3 → 4 |
 
 Each review also found new findings in the fixes themselves, mostly minors plus one test-quality major: a lock that
-no test pins. The latest scores:
+no test pins. This fix-then-re-review loop is what
+[`fixing-reviewed-findings`](../../skills/fixing-reviewed-findings/SKILL.md) runs. The ledger's `Cross-ref` lines
+name, by ID, the open findings that share code with each one (LOG-009 and LOG-013, for example), so a fix can take
+them together. The latest scores:
 
 | LOG | ERR | SEC | PAT | CON | CMP | LGG | TSQ | TYP | RDB | REQ |
 |---|---|---|---|---|---|---|---|---|---|---|

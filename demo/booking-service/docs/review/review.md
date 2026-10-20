@@ -164,12 +164,13 @@ visible mid-scroll.
 - `ddl/03-functions.sql:75-78`, `:128`, `:138`
 - Worksheet: reach any search whose `from` falls inside a window (from=now, a paginated page 2) · residue request · signal none → major
 - Intent: data-design OQ2. With `from=09:07` the offered starts are 09:07 and 09:22, and an existing 09:15 session with room never matches (exact `starts_at` join), so it vanishes from results.
+- Cross-ref: REQ-016 (same code, `ddl/03-functions.sql:128`).
 
 **LOG-008 · M · isolated — A customer cannot withdraw a HELD request inside the cancellation window**
 - `ddl/03-functions.sql:473-480`
 - Worksheet: reach customer at an approval-mode provider whose start is within 24 h · residue request (BK007; the hold persists) · signal caller → major
 - Intent: UC6, and requirements §4.1, where HELD→CANCELLED needs only "Before start time" (R6 sits on the CONFIRMED row).
-- Cross-ref: REQ.
+- Cross-ref: REQ; TSQ-005 (same code, `ddl/03-functions.sql:473`); RDB-001 (same code, `ddl/03-functions.sql:473`); RDB-005 (same code, `ddl/03-functions.sql:473`); REQ-001 (same code, `ddl/03-functions.sql:473`).
 - Still open @eef5ebc: `:473-480` still applies the window to HELD cancels. The new reschedule comment (`ddl/03:571-574`) says a HELD request has no window, so the two paths now disagree.
 
 **LOG-009 · M · isolated — A rule with a future effective_from cannot be ended; the attempt returns 500**
@@ -177,17 +178,19 @@ visible mid-scroll.
 - Worksheet: reach provider withdrawing a pre-published rule · residue request · signal caller (500) → major
 - Evidence: the default "today" is before effective_from, giving 23514 → 500. Even an explicit date leaves at least one day published.
 - Still open @dc188b7: the no-body default is now the provider's local today (`end_availability_rule.sql:5-6`), but it still precedes a future effective_from, so the CHECK still answers 500.
+- Cross-ref: LOG-013 (same code, `sql/management/end_availability_rule.sql:3`).
 
 **LOG-010 · M · isolated — Re-linking an already-linked service and resource answers 404 "no such provider, service or resource"**
 - `sql/management/link_service_resource.sql:10`; `repo/JdbcProviderSetupRepository.kt:77`; `core/management/ProviderSetup.kt:89-93`; `api/ProviderSetupController.kt:106-110`
 - Worksheet: reach any admin retrying the link (e.g. after a lost 204) · residue request · signal caller (misleading) → major
 - Evidence: two identical POSTs give 204 then 404, although the link exists.
+- Cross-ref: LGG-002 (same code, `api/ProviderSetupController.kt:107`).
 
 **LOG-011 · M · isolated — Idempotency replay ignores the request body**
 - `ddl/03-functions.sql:315-325`; `api/BookingOutcomeResponder.kt:25-35`
 - Worksheet: reach any client reusing a key · residue request · signal none → major
 - Evidence: key K for slot T1, then `POST {startsAt:T2}` with K → 200 with booking A(T1). No booking exists at T2, and the body does not show the mismatch.
-- Cross-ref: CMP.
+- Cross-ref: CMP; CON-004 (same code, `ddl/03-functions.sql:315`).
 
 **LOG-012 · m · isolated — Approval, gate resolution or reschedule accepted after hold_deadline until the next sweep**
 - `ddl/03-functions.sql:464-466` (checks starts_at only); sweep interval `application.yaml:54`. Since 4bdacf6 the expiry sweep has its own thread, so the window is the 30 s interval plus the sweep's run time (ERR-001 resolved).
@@ -195,6 +198,7 @@ visible mid-scroll.
 
 **LOG-013 · m · isolated — Ending a rule with an explicit date can extend an already-ended rule**
 - `sql/management/end_availability_rule.sql:3-9` has no guard; `{effectiveUntil: 2099-01-01}` revives a rule ended in the past.
+- Cross-ref: LOG-009 (same code, `sql/management/end_availability_rule.sql:3`).
 
 ---
 
@@ -208,19 +212,19 @@ visible mid-scroll.
   - DB CHECK or UNIQUE violations from caller input: timezone (`ddl/01:94`), blank names, dayOfWeek, `endsAt ≤ startsAt` (`ddl/01:263`), a duplicate `linkedSubject` (`ddl/01:139`)
 - Worksheet: reach any token holder · residue request · signal caller (wrong class, rule "none") → major; widespread: every controller module.
 - Evidence (probe): `/v1/providers/not-a-uuid/availability` → 500 `{"code":"INTERNAL","rule":"none"}`; `POST /v1/providers {"timezone":"Mars/Olympus"}` → 500 plus an ERROR log line. NF8 is lost.
-- Cross-ref: CMP (error shape), LGG (noise at ERROR).
+- Cross-ref: CMP (error shape), LGG (noise at ERROR); LGG-003 (same code, `api/ApiExceptionHandler.kt:41`).
 
 **ERR-003 · M · isolated — Provider creation is two autocommit statements**
 - `core/management/ProviderSetup.kt:61-66`; `repo/JdbcProviderSetupRepository.kt:25-44` (dropped `.update()` at `:43`); there is no `@Transactional` or TransactionTemplate anywhere in src
 - Worksheet: reach `POST /v1/providers` with a failure between the statements (connection drop, pod kill) · residue external (a provider with no admin, unmanageable; a retry creates a second provider) · signal caller (500) → major
 - Breaks the house rule "every multi-statement write is one function, one transaction" (data-design.md:424).
-- Cross-ref: PAT, SEC-002.
+- Cross-ref: PAT, SEC-002; CON-005 (same code, `core/management/ProviderSetup.kt:62`).
 
 **ERR-004 · m · isolated — Gate consumer commits the inbox dedupe claim before the effect (latent)**
 - `core/gate/GateResolutionService.kt:34-41, 80-83`; `repo/JdbcWorkerRepositories.kt:101-124`; contradicts the inbox_message comment at `ddl/01:~480` ("same transaction as the effect").
 - A redelivery after a failure is answered DUPLICATE, so the resolution is lost.
 - Latent: no producer exists (not exercised). If the edge becomes live, this is external + none → C.
-- Cross-ref: PAT, CON.
+- Cross-ref: PAT, CON; CON-005 (same code, `core/gate/GateResolutionService.kt:81`).
 
 **ERR-005 · m · isolated — Malformed gate resolution is retried, then skipped, with no dead-letter (owner declined hazard, domain-context §7)**
 - `worker/GateResolutionListener.kt:20-23` (the comment promises dead-lettering), `:46-68`; no CommonErrorHandler or DeadLetterPublishingRecoverer bean exists. Latent (no producer); external + none → C once live.
@@ -238,7 +242,7 @@ visible mid-scroll.
 - Status: open, found @66308b9
 - `sys/SecurityConfig.kt:37-38`; `api/ApiExceptionHandler.kt` never sees a filter-chain denial.
 - A caller with a valid token but the wrong scope gets no `{code, rule, message}` body. `SecurityConfigTest` asserts the status only.
-- Cross-ref: CMP-004.
+- Cross-ref: CMP-004; SEC-009 (same code, `sys/SecurityConfig.kt:37`); LGG-006 (same code, `sys/SecurityConfig.kt:37`); RDB-004 (same code, `sys/SecurityConfig.kt:37`).
 
 ---
 
@@ -260,6 +264,7 @@ visible mid-scroll.
 
 **SEC-006 · m · isolated — Actuator metrics and prometheus endpoints are unauthenticated**
 - `application.yaml:58-62`; `SecurityConfig.kt:26` (`/actuator/**` permitAll).
+- Cross-ref: REQ-002 (same code, `application.yaml:58`); REQ-006 (same code, `sys/SecurityConfig.kt:26`).
 
 **SEC-007 · m · isolated — `linkedSubject` lets an admin bind or squat any IdP subject (latent; idp_subject read by nothing)**
 - `ProviderSetupController.kt:57`; `sql/management/insert_resource.sql:3`; UNIQUE conflict → 500 discloses an existing link.
@@ -272,7 +277,7 @@ visible mid-scroll.
 - Status: open, found @66308b9
 - `sys/SecurityConfig.kt:37-38, 44-45`; comments that state it as fact: `api/InternalController.kt:13-15`, `core/listing/ListingService.kt:42-43`, `sys/SecurityConfig.kt:19-20`
 - The gate reads the default `scope`/`scp` authorities. "Never an end-user token" holds only if the issuer never grants `booking.contacts.read` or `booking.providers.create` to end users. PD1 (claim mapping) is still open. Latent: there is no deployment.
-- Cross-ref: REQ-017, PD1.
+- Cross-ref: REQ-017, PD1; ERR-008 (same code, `sys/SecurityConfig.kt:37`); CMP-004 (same code, `sys/SecurityConfig.kt:37`); LGG-006 (same code, `sys/SecurityConfig.kt:37`); RDB-004 (same code, `sys/SecurityConfig.kt:37`).
 
 ---
 
@@ -286,6 +291,7 @@ visible mid-scroll.
 **PAT-002 · m · isolated — Repo adapter re-implements the reschedule state decision**
 - `repo/JdbcBookingLifecycle.kt:82-83` duplicates `ddl/03-functions.sql:603-606`; `fn_reschedule_booking` returns no state.
 - Wider @eef5ebc: the SQL now has a third branch (HELD stays HELD whatever the gate, `ddl/03-functions.sql:619-628`), and the Kotlin still infers the state from the gate (`JdbcBookingLifecycle.kt:82-83`). They diverge only if a provider's confirmation mode changes while it has a HELD booking, and no API changes the mode. The `COMMENT ON FUNCTION` at `ddl/03:660` is now stale.
+- Cross-ref: RDB-001 (same code, `ddl/03-functions.sql:604`).
 
 **PAT-004 · m · isolated — Logging inside core**
 - `core/outbox/OutboxRelay.kt:4, 21, 45-48`, against `BookingOutcomeResponder.kt:15-16` ("Business code does not log").
@@ -304,17 +310,19 @@ visible mid-scroll.
 - `ddl/03-functions.sql:336-351` (ON CONFLICT arbitrates only `session_identity`; the non-arbiter `session_no_overlap` makes the second racer wait and then fail), `:348-350`; same shape at `:582-598`; `ddl/01-create-tables.sql:300-302`
 - Worksheet: reach two customers booking the same not-yet-existing slot of a capacity>1 service · residue request (409 or 500; rolled back) · signal caller → major
 - Evidence (verifier probe): 300 new capacity-3 slots, 3 racers each → 828 confirmed, 29 BK001, 43 40P01. I1 and I2 still hold.
+- Cross-ref: TSQ-004 (same code, `ddl/03-functions.sql:348`).
 
 **CON-003 · M · isolated — Reschedule locks two sessions in request order; crossing moves deadlock**
 - `ddl/03-functions.sql:579-580` then `:583-594`; versus the expiry batch at `:644-653` / `:489-491`
 - Worksheet: reach two crosswise reschedules, or a reschedule against a sweep · residue request (40P01 → 500; a lost sweep batch delays expiry by at least 30 s) · signal caller → major
 - Evidence: the probes reproduced 40P01 (8/311 and 1/600).
+- Cross-ref: TSQ-003 (same code, `ddl/03-functions.sql:489`); TSQ-004 (same code, `ddl/03-functions.sql:589`); RDB-001 (same code, `ddl/03-functions.sql:650`); RDB-005 (same code, `ddl/03-functions.sql:579`); REQ-018 (same code, `ddl/03-functions.sql:579`).
 
 **CON-004 · M · isolated — Two concurrent creates with the same Idempotency-Key: the second gets 409 or 500, not the replay**
 - `ddl/03-functions.sql:315-325` (unlocked replay read), `:342-345`, `:371-377`; `booking_idempotency_key_uq` in `ddl/02-create-indexes.sql:5-7`
 - Worksheet: reach a client double-submit or retry while the first create is uncommitted · residue request · signal caller (wrong: BK002 "at capacity" for capacity 1; 23505 → 500 for capacity > 1) → major
 - Evidence: deterministic probe; R15 requires the replay.
-- Cross-ref: ERR.
+- Cross-ref: ERR; LOG-011 (same code, `ddl/03-functions.sql:315`); TSQ-004 (same code, `ddl/03-functions.sql:342`).
 
 **CON-005 · M · widespread — One non-thread-safe RandomGenerator shared by the UUIDv7 generator across virtual threads**
 - `sys/TimeAndIdConfig.kt:21`; `sys/IdGenerator.kt:26-33` (no synchronization). Callers:
@@ -326,7 +334,7 @@ visible mid-scroll.
   - `GateResolutionService.kt:66,81`
 - Worksheet: reach concurrent requests on one replica in the same millisecond · residue request (duplicate public_ref or event_id → 23505 → 500; merged correlation ids) · signal caller → major; widespread: every id minted by both workloads.
 - Evidence: probes found 2.7M duplicate draw pairs in 12.8M with 64 virtual threads, and duplicates even with 2 threads.
-- Cross-ref: SEC-004.
+- Cross-ref: SEC-004; ERR-003 (same code, `core/management/ProviderSetup.kt:62`); ERR-004 (same code, `core/gate/GateResolutionService.kt:81`).
 
 **CON-006 · M · isolated — "No preference" resource selection is check-then-act and deterministic, so concurrent requests collide while another resource is free**
 - `core/booking/BookingService.kt:85-93`; `sql/availability/select_resource.sql:27-35`
@@ -362,7 +370,7 @@ visible mid-scroll.
 **CMP-004 · m · isolated — Two routes narrowed to scoped tokens with no contract note**
 - Status: open, found @66308b9
 - `sys/SecurityConfig.kt:37-38`: `GET /internal/**` and `POST /v1/providers` now answer 403 without the scope. There is no consumer, so nothing breaks; AQ8 defers the published contract.
-- Cross-ref: ERR-008.
+- Cross-ref: ERR-008; SEC-009 (same code, `sys/SecurityConfig.kt:37`); LGG-006 (same code, `sys/SecurityConfig.kt:37`); RDB-004 (same code, `sys/SecurityConfig.kt:37`).
 
 ---
 
@@ -373,9 +381,11 @@ visible mid-scroll.
 
 **LGG-002 · m · widespread — Rejection log lines carry no subject identifier**
 - `api/BookingOutcomeResponder.kt:57, 71`; `AvailabilityAdminController.kt:114`; `ProviderSetupController.kt:107`; `ListingController.kt:49`.
+- Cross-ref: LOG-010 (same code, `api/ProviderSetupController.kt:107`).
 
 **LGG-003 · m · isolated — pgjdbc "Failing row contains (…)" row data reaches ERROR logs**
 - `api/ApiExceptionHandler.kt:41` logs the full exception. Reachable today: free-text `availability_exception.reason`, provider name and timezone, and `Key (idp_subject)=(…)`. Customer PII is not reachable today (no CHECK or caller-trippable UNIQUE on customer). It becomes critical if one is added.
+- Cross-ref: ERR-002 (same code, `api/ApiExceptionHandler.kt:41`).
 
 **LGG-004 · m · isolated — Untrusted strings logged raw (log forging)**
 - `api/BookingOutcomeResponder.kt:91` (`supplied=`); `worker/GateResolutionListener.kt:40-43` (latent).
@@ -386,6 +396,7 @@ visible mid-scroll.
 **LGG-006 · m · isolated — A refused contacts or onboarding call leaves no service log line**
 - Status: open, found @66308b9
 - `sys/SecurityConfig.kt:37-38`. No AccessDeniedHandler or authorization-event listener is configured; denials appear only at Spring Security DEBUG. No documented process reads such a line.
+- Cross-ref: ERR-008 (same code, `sys/SecurityConfig.kt:37`); SEC-009 (same code, `sys/SecurityConfig.kt:37`); CMP-004 (same code, `sys/SecurityConfig.kt:37`); RDB-004 (same code, `sys/SecurityConfig.kt:37`).
 
 ---
 
@@ -405,12 +416,15 @@ Every TSQ major below was confirmed by applying its named mutation to production
 
 **TSQ-003 · M · isolated — Capacity release when a booking leaves HELD or CONFIRMED is untested**
 - `ddl/03-functions.sql:489-491`. Mutation: release → `PERFORM 1` → green (also with the clock fixed). Worksheet: reach every cancel, decline, expiry and no-show · residue external (permanent capacity leak) · signal none → major.
+- Cross-ref: CON-003 (same code, `ddl/03-functions.sql:489`).
 
 **TSQ-004 · M · isolated — Session capacity guard (I2, NF4) untested, sequentially and concurrently**
 - `ddl/03-functions.sql:342-353, 589-601, 492-497`; every fixture uses capacity 1. Mutation: drop `WHERE session.booked_count < session.capacity` (`:345`) → green. Worksheet: reach a second booking of a full session · residue external (overbooked) · signal none → major. README "Known gaps" records the missing NF4 test without accepting the consequence.
+- Cross-ref: CON-002 (same code, `ddl/03-functions.sql:348`); CON-003 (same code, `ddl/03-functions.sql:589`); CON-004 (same code, `ddl/03-functions.sql:342`); TSQ-016 (same code, `ddl/03-functions.sql:597`); RDB-009 (same code, `ddl/03-functions.sql:597`).
 
 **TSQ-005 · M · isolated — The cancel path, including R6 and R27, has no test**
 - `ddl/03-functions.sql:468-481`; `BookingLifecycleService.kt:51-56` is never called by a test. Mutation: R6 check → `IF false` (`:476`) → green. Worksheet: reach a customer cancelling inside the window · residue external · signal none → major.
+- Cross-ref: LOG-008 (same code, `ddl/03-functions.sql:473`); RDB-001 (same code, `ddl/03-functions.sql:473`); RDB-005 (same code, `ddl/03-functions.sql:469`); REQ-001 (same code, `ddl/03-functions.sql:468`).
 
 **TSQ-006 · M · isolated — Reschedule (UC8) tests leave capacity release, R6 actor scoping and the deadline clamp unpinned**
 - `ddl/03-functions.sql:535-660`; tests at `repo/BookingLifecycleIT.kt` (four reschedule tests since eef5ebc)
@@ -425,6 +439,7 @@ Every TSQ major below was confirmed by applying its named mutation to production
 
 **TSQ-007 · M · isolated — Tenancy filters in the listing SQL are untested**
 - `sql/listing/customer_bookings.sql:19`, `provider_bookings.sql:18`, `booking_contacts.sql:12`; ListingServiceTest stubs the repository. Mutation: `WHERE b.customer_id = :customerId` → `WHERE :customerId IS NOT NULL` → green. Worksheet: reach any customer listing · residue external (cross-customer disclosure) · signal none → major.
+- Cross-ref: REQ-008 (same code, `sql/listing/provider_bookings.sql:18`).
 
 **TSQ-008 · M · isolated — Rule expansion in the provider timezone (R14, DST) has no test**
 - `ddl/03-functions.sql:46-62`; every fixture uses `'UTC'` (`BookingLifecycleIT.kt:78`, `JdbcBookingRepositoryIT.kt:68`, `ProviderOnboardingIT.kt:86`, `AvailabilityManagementIT.kt:70`). Mutation: `AT TIME ZONE v_tz` → `'UTC'` → green. Worksheet: reach every non-UTC provider · residue external · signal none → major. The README known gap records the missing test and does not credit it.
@@ -462,7 +477,7 @@ Every TSQ major below was confirmed by applying its named mutation to production
 - `ddl/03-functions.sql:597-598` (reschedule `FOR SHARE`); `sql/management/end_availability_rule.sql:15` (`FOR UPDATE OF res`)
 - Worksheet: reach a reschedule or a rule end racing the other side · residue external (a booking stored inside time that was already withdrawn, missing from the R20 list) · signal none → major
 - Mutations, each run in a scratch copy: delete the reschedule lock → 86 tests, the 5 baseline failures only; delete the end-rule lock → the same. Both stay green.
-- Cross-ref: CON-001 (resolved).
+- Cross-ref: CON-001 (resolved); TSQ-004 (same code, `ddl/03-functions.sql:597`); RDB-009 (same code, `ddl/03-functions.sql:597`).
 
 **TSQ-017 · m · isolated — The race tests prove "blocked" with a fixed sleep**
 - Status: open, found @862df06
@@ -486,10 +501,12 @@ Every TSQ major below was confirmed by applying its named mutation to production
 
 **RDB-001 · m · isolated — Hard-coded lookup ids in plpgsql**
 - `ddl/03-functions.sql:67, 72, 261, 357, 360, 473, 502-504, 604, 606, 650, 676, 678`. Drift risk is settled by `04-seed-lookups.sql:1-2`; only readability remains.
+- Cross-ref: LOG-008 (same code, `ddl/03-functions.sql:473`); PAT-002 (same code, `ddl/03-functions.sql:604`); CON-003 (same code, `ddl/03-functions.sql:650`); TSQ-005 (same code, `ddl/03-functions.sql:473`); RDB-005 (same code, `ddl/03-functions.sql:473`); REQ-001 (same code, `ddl/03-functions.sql:473`); REQ-003 (same code, `ddl/03-functions.sql:676`).
 
 **RDB-002 · m · isolated — Take, deadline and event mapping duplicated between fn_create_booking and fn_reschedule_booking**
 - `ddl/03-functions.sql:336-354` vs `:582-601`; `:363-368` vs `:607-611`; `:384, 389` vs `:519-526, 628`.
 - Wider @862df06: the R20 resource lock and its comment are a third piece duplicated between create (`ddl/03-functions.sql:327-332`) and reschedule (`:597-598`).
+- Cross-ref: REQ-003 (same code, `ddl/03-functions.sql:519`).
 
 **RDB-003 · m · isolated — Default values stated twice**
 - DDL defaults (`ddl/01:96-100, 161-164`) restated in `sql/management/insert_provider.sql:9-13` and `insert_service.sql:6-9`; `Page.first` (`core/listing/Listing.kt:43`) restated in `api/ListingController.kt:27-28, 41-42`.
@@ -497,10 +514,12 @@ Every TSQ major below was confirmed by applying its named mutation to production
 **RDB-004 · m · isolated — The `SCOPE_` authority prefix is restated in main and in the test**
 - Status: open, found @66308b9
 - `sys/SecurityConfig.kt:37-38`, `src/test/kotlin/dev/booking/sys/SecurityConfigTest.kt:57`: an unnamed convention written in two places.
+- Cross-ref: ERR-008 (same code, `sys/SecurityConfig.kt:37`); SEC-009 (same code, `sys/SecurityConfig.kt:37`); CMP-004 (same code, `sys/SecurityConfig.kt:37`); LGG-006 (same code, `sys/SecurityConfig.kt:37`).
 
 **RDB-005 · m · isolated — The R27 and R6 predicates are written twice**
 - Status: open, found @eef5ebc
 - `ddl/03-functions.sql:569-583` (reschedule) restates `:469-480` (cancel). A change to the window rule has to be made in both places.
+- Cross-ref: LOG-008 (same code, `ddl/03-functions.sql:473`); CON-003 (same code, `ddl/03-functions.sql:579`); TSQ-005 (same code, `ddl/03-functions.sql:469`); RDB-001 (same code, `ddl/03-functions.sql:473`); REQ-001 (same code, `ddl/03-functions.sql:469`); REQ-018 (same code, `ddl/03-functions.sql:571`).
 
 **RDB-006 · m · isolated — Second-resource test setup hard-codes the fixture date**
 - Status: open, found @eef5ebc
@@ -517,6 +536,7 @@ Every TSQ major below was confirmed by applying its named mutation to production
 **RDB-009 · m · isolated — `fn_assert_bookable`'s lock precondition is stated only in its callers**
 - Status: open, found @862df06
 - `ddl/03-functions.sql:327-332`, `:597-598`. The function is STABLE and cannot lock, and its `COMMENT ON FUNCTION` does not say that callers must take the resource lock first.
+- Cross-ref: TSQ-004 (same code, `ddl/03-functions.sql:597`); TSQ-016 (same code, `ddl/03-functions.sql:597`).
 
 ---
 
@@ -526,18 +546,19 @@ Every TSQ major below was confirmed by applying its named mutation to production
 - `api/BookingDtos.kt:35`; `api/BookingController.kt:69-76`; `core/booking/BookingLifecycleService.kt:51-56`; `ddl/03-functions.sql:468-481, 500-516`; the column comment at `ddl/01:397` claims "mandatory … (R7)" but nothing enforces it
 - Worksheet: reach provider admin POSTing `/cancel` with no body · residue external (a CANCELLED booking with a NULL reason in append-only history) · signal none → critical
 - Requirement: R7 "must supply a reason"; UC7 "The resulting record states who cancelled and why."
+- Cross-ref: LOG-008 (same code, `ddl/03-functions.sql:473`); TSQ-005 (same code, `ddl/03-functions.sql:468`); RDB-001 (same code, `ddl/03-functions.sql:473`); RDB-005 (same code, `ddl/03-functions.sql:469`).
 
 **REQ-002 · C · widespread — Undispatched events are neither observable nor alertable (NF11)**
 - `core/outbox/OutboxRelay.kt:33-48` (comment `:36-37` claims "attemptCount drives the NF11 alert"); `sql/outbox/record_failure.sql:1-2`; `application.yaml:58-62` exposes prometheus with no registry dependency in `build.gradle.kts:25-48`; there is no gauge or metric
 - Worksheet: reach any broker outage or persistently failing event · residue external (lifecycle events withheld for an unbounded time; the booking's later events blocked) · signal none (no alerting, domain-context §7) → critical
 - Requirement: NF11 "sustained lag or repeated dispatch failure raises an alert rather than accumulating silently". There is no known-gap marker; the code claims the alert exists.
-- Cross-ref: ERR.
+- Cross-ref: ERR; SEC-006 (same code, `application.yaml:58`).
 
 **REQ-003 · C · isolated — BookingCompleted does not distinguish system auto-completion from a provider's mark (UC12)**
 - `ddl/03-functions.sql:179-195` (payload has no completion source), `:519-526`, `:676-678`
 - Worksheet: reach every completion (an outbox row is written each time) · residue external (indistinguishable events) · signal none → critical
 - Requirement: UC12 "The record and the event distinguish …". The record half is met; the event half is not.
-- Cross-ref: CMP (draft topic).
+- Cross-ref: CMP (draft topic); RDB-001 (same code, `ddl/03-functions.sql:676`); RDB-002 (same code, `ddl/03-functions.sql:519`).
 
 **REQ-004 · C · isolated — No erasure, export or retention for customer data (NF5)**
 - `customer.erased_at` (`ddl/01-create-tables.sql:206`) is read (`booking_contacts.sql:8`) but never written. There is no export or erasure endpoint and no retention job.
@@ -550,13 +571,14 @@ Every TSQ major below was confirmed by applying its named mutation to production
 
 **REQ-006 · M · isolated — Availability search requires a token; the requirements make it public (UC4, §3)**
 - `sys/SecurityConfig.kt:26-27`; `api/AvailabilityController.kt:23`. Worksheet: reach any anonymous browser · residue request (401) · signal caller → major. No ruling marks the deviation as known.
-- Cross-ref: SEC.
+- Cross-ref: SEC; SEC-006 (same code, `sys/SecurityConfig.kt:26`).
 
 **REQ-007 · M · isolated — A "no preference" booking of an unavailable time is rejected as R19 with 404 (UC5, NF8)**
 - `core/booking/BookingService.kt:43-47`; `core/booking/BookingDomain.kt:55`; `api/BookingOutcomeResponder.kt:122`. Worksheet: reach a no-preference create at a full or unpublished time · residue request · signal caller (wrong rule) → major.
 
 **REQ-008 · M · isolated — Provider calendar cannot be filtered by resource or state (UC10)**
 - `api/ListingController.kt:36-43`; `core/listing/ListingService.kt:29-39`; `sql/listing/provider_bookings.sql:18-20`. Worksheet: request · none → major.
+- Cross-ref: TSQ-007 (same code, `sql/listing/provider_bookings.sql:18`).
 
 **REQ-009 · M · isolated — No transition history is exposed anywhere (UC10)**
 - `api/BookingDtos.kt:72-82`; no single-booking read; `booking_transition` is never read. Worksheet: request · none → major.
@@ -581,6 +603,7 @@ Every TSQ major below was confirmed by applying its named mutation to production
 
 **REQ-016 · m · isolated — Unrequested `slotStepMinutes` (default 15) shapes offered starts**
 - `api/BookingDtos.kt:150`; `sql/management/insert_service.sql:9`; `ddl/03-functions.sql:128`.
+- Cross-ref: LOG-007 (same code, `ddl/03-functions.sql:128`).
 
 **REQ-017 · m · isolated — The design documents and comments still describe the old access rules, and the scope names appear nowhere else**
 - Status: open, found @66308b9
@@ -591,7 +614,7 @@ Every TSQ major below was confirmed by applying its named mutation to production
 **REQ-018 · m · isolated — The reschedule window rule exists only in a SQL comment**
 - Status: open, found @eef5ebc
 - `ddl/03-functions.sql:571-583`: a customer may not reschedule a CONFIRMED booking inside the R6 window. UC8 and requirements §4.1 do not state it.
-- Cross-ref: LOG-008.
+- Cross-ref: LOG-008; CON-003 (same code, `ddl/03-functions.sql:579`); RDB-005 (same code, `ddl/03-functions.sql:571`).
 
 **REQ-019 · m · isolated — The data design still says availability edits take no lock**
 - Status: open, found @862df06

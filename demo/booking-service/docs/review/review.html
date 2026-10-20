@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- generated from review.md on 2026-10-17 — do not edit; regenerate with render_review.mjs instead. Agents must consume the markdown, not this page. -->
+<!-- generated from review.md on 2026-10-20 — do not edit; regenerate with render_review.mjs instead. Agents must consume the markdown, not this page. -->
 <html lang="en"><head>
-<meta name="source-sha256" content="429dca224be0f6951557b3eba0141c84ef75c261d4f621b6ced3528a3eb70831"><meta charset="utf-8">
+<meta name="source-sha256" content="c027e78cccbf29cdad1d8f08593afb8b3544d4304c5b46b50720be5209d859cd"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>aspect-code-review — code review ledger</title>
 <style>
@@ -101,7 +101,7 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <main>
 <header class="page">
   <h1>Code Review Ledger — aspect-code-review</h1>
-  <div class="meta">Source: <code>review.md</code> · review: 2026-10-17 @ 862df06 (incremental review, 11 aspects, scope: diff since 4bdacf6) · page generated 2026-10-17</div>
+  <div class="meta">Source: <code>review.md</code> · review: 2026-10-17 @ 862df06 (incremental review, 11 aspects, scope: diff since 4bdacf6) · page generated 2026-10-20</div>
 </header>
 
 <section class="panel" id="gate">
@@ -296,32 +296,36 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <h4 class="finding" id="LOG-007">LOG-007 · M · isolated — Slot grid anchored to the query's <code>from</code>, not the window start</h4>
 <ul><li><code>ddl/03-functions.sql:75-78</code>, <code>:128</code>, <code>:138</code></li>
 <li>Worksheet: reach any search whose <code>from</code> falls inside a window (from=now, a paginated page 2) · residue request · signal none → major</li>
-<li>Intent: data-design OQ2. With <code>from=09:07</code> the offered starts are 09:07 and 09:22, and an existing 09:15 session with room never matches (exact <code>starts_at</code> join), so it vanishes from results.</li></ul>
+<li>Intent: data-design OQ2. With <code>from=09:07</code> the offered starts are 09:07 and 09:22, and an existing 09:15 session with room never matches (exact <code>starts_at</code> join), so it vanishes from results.</li>
+<li>Cross-ref: <a class="xref" href="#REQ-016">REQ-016</a> (same code, <code>ddl/03-functions.sql:128</code>).</li></ul>
 <h4 class="finding" id="LOG-008">LOG-008 · M · isolated — A customer cannot withdraw a HELD request inside the cancellation window</h4>
 <ul><li><code>ddl/03-functions.sql:473-480</code></li>
 <li>Worksheet: reach customer at an approval-mode provider whose start is within 24 h · residue request (BK007; the hold persists) · signal caller → major</li>
 <li>Intent: UC6, and requirements §4.1, where HELD→CANCELLED needs only "Before start time" (R6 sits on the CONFIRMED row).</li>
-<li>Cross-ref: REQ.</li>
+<li>Cross-ref: REQ; <a class="xref" href="#TSQ-005">TSQ-005</a> (same code, <code>ddl/03-functions.sql:473</code>); <a class="xref" href="#RDB-001">RDB-001</a> (same code, <code>ddl/03-functions.sql:473</code>); <a class="xref" href="#RDB-005">RDB-005</a> (same code, <code>ddl/03-functions.sql:473</code>); <a class="xref" href="#REQ-001">REQ-001</a> (same code, <code>ddl/03-functions.sql:473</code>).</li>
 <li>Still open @eef5ebc: <code>:473-480</code> still applies the window to HELD cancels. The new reschedule comment (<code>ddl/03:571-574</code>) says a HELD request has no window, so the two paths now disagree.</li></ul>
 <h4 class="finding" id="LOG-009">LOG-009 · M · isolated — A rule with a future effective_from cannot be ended; the attempt returns 500</h4>
 <ul><li><code>api/AvailabilityAdminController.kt:66</code>; <code>sql/management/end_availability_rule.sql:3-9</code>; CHECK <code>availability_rule_dates_forward</code> at <code>ddl/01-create-tables.sql:239</code></li>
 <li>Worksheet: reach provider withdrawing a pre-published rule · residue request · signal caller (500) → major</li>
 <li>Evidence: the default "today" is before effective_from, giving 23514 → 500. Even an explicit date leaves at least one day published.</li>
-<li>Still open @dc188b7: the no-body default is now the provider's local today (<code>end_availability_rule.sql:5-6</code>), but it still precedes a future effective_from, so the CHECK still answers 500.</li></ul>
+<li>Still open @dc188b7: the no-body default is now the provider's local today (<code>end_availability_rule.sql:5-6</code>), but it still precedes a future effective_from, so the CHECK still answers 500.</li>
+<li>Cross-ref: <a class="xref" href="#LOG-013">LOG-013</a> (same code, <code>sql/management/end_availability_rule.sql:3</code>).</li></ul>
 <h4 class="finding" id="LOG-010">LOG-010 · M · isolated — Re-linking an already-linked service and resource answers 404 "no such provider, service or resource"</h4>
 <ul><li><code>sql/management/link_service_resource.sql:10</code>; <code>repo/JdbcProviderSetupRepository.kt:77</code>; <code>core/management/ProviderSetup.kt:89-93</code>; <code>api/ProviderSetupController.kt:106-110</code></li>
 <li>Worksheet: reach any admin retrying the link (e.g. after a lost 204) · residue request · signal caller (misleading) → major</li>
-<li>Evidence: two identical POSTs give 204 then 404, although the link exists.</li></ul>
+<li>Evidence: two identical POSTs give 204 then 404, although the link exists.</li>
+<li>Cross-ref: <a class="xref" href="#LGG-002">LGG-002</a> (same code, <code>api/ProviderSetupController.kt:107</code>).</li></ul>
 <h4 class="finding" id="LOG-011">LOG-011 · M · isolated — Idempotency replay ignores the request body</h4>
 <ul><li><code>ddl/03-functions.sql:315-325</code>; <code>api/BookingOutcomeResponder.kt:25-35</code></li>
 <li>Worksheet: reach any client reusing a key · residue request · signal none → major</li>
 <li>Evidence: key K for slot T1, then <code>POST {startsAt:T2}</code> with K → 200 with booking A(T1). No booking exists at T2, and the body does not show the mismatch.</li>
-<li>Cross-ref: CMP.</li></ul>
+<li>Cross-ref: CMP; <a class="xref" href="#CON-004">CON-004</a> (same code, <code>ddl/03-functions.sql:315</code>).</li></ul>
 <h4 class="finding" id="LOG-012">LOG-012 · m · isolated — Approval, gate resolution or reschedule accepted after hold_deadline until the next sweep</h4>
 <ul><li><code>ddl/03-functions.sql:464-466</code> (checks starts_at only); sweep interval <code>application.yaml:54</code>. Since 4bdacf6 the expiry sweep has its own thread, so the window is the 30 s interval plus the sweep's run time (<a class="xref" href="#ERR-001">ERR-001</a> resolved).</li>
 <li>Second occurrence @eef5ebc: <code>fn_reschedule_booking</code> (<code>ddl/03-functions.sql:619-623</code>) moves a HELD booking whose deadline has already lapsed, and returns 200. The sweep expires it within 30 s.</li></ul>
 <h4 class="finding" id="LOG-013">LOG-013 · m · isolated — Ending a rule with an explicit date can extend an already-ended rule</h4>
-<ul><li><code>sql/management/end_availability_rule.sql:3-9</code> has no guard; <code>{effectiveUntil: 2099-01-01}</code> revives a rule ended in the past.</li></ul>
+<ul><li><code>sql/management/end_availability_rule.sql:3-9</code> has no guard; <code>{effectiveUntil: 2099-01-01}</code> revives a rule ended in the past.</li>
+<li>Cross-ref: <a class="xref" href="#LOG-009">LOG-009</a> (same code, <code>sql/management/end_availability_rule.sql:3</code>).</li></ul>
 <hr class="aspect-rule">
 <h4 id="aspect-ERR">Error handling (ERR) — 4/10 · 7 open</h4>
 <h4 class="finding" id="ERR-002">ERR-002 · M · widespread — Caller mistakes become 500 "internal error" plus an ERROR "unhandled defect" stack trace</h4>
@@ -329,17 +333,17 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <p>- type mismatch on every UUID or Instant param - a missing <code>@RequestParam</code>, malformed JSON, or an unknown route - <code>Page</code> <code>require</code> (<code>core/listing/Listing.kt:36-39</code>) - DB CHECK or UNIQUE violations from caller input: timezone (<code>ddl/01:94</code>), blank names, dayOfWeek, <code>endsAt ≤ startsAt</code> (<code>ddl/01:263</code>), a duplicate <code>linkedSubject</code> (<code>ddl/01:139</code>)</p>
 <ul><li>Worksheet: reach any token holder · residue request · signal caller (wrong class, rule "none") → major; widespread: every controller module.</li>
 <li>Evidence (probe): <code>/v1/providers/not-a-uuid/availability</code> → 500 <code>{"code":"INTERNAL","rule":"none"}</code>; <code>POST /v1/providers {"timezone":"Mars/Olympus"}</code> → 500 plus an ERROR log line. NF8 is lost.</li>
-<li>Cross-ref: CMP (error shape), LGG (noise at ERROR).</li></ul>
+<li>Cross-ref: CMP (error shape), LGG (noise at ERROR); <a class="xref" href="#LGG-003">LGG-003</a> (same code, <code>api/ApiExceptionHandler.kt:41</code>).</li></ul>
 <h4 class="finding" id="ERR-003">ERR-003 · M · isolated — Provider creation is two autocommit statements</h4>
 <ul><li><code>core/management/ProviderSetup.kt:61-66</code>; <code>repo/JdbcProviderSetupRepository.kt:25-44</code> (dropped <code>.update()</code> at <code>:43</code>); there is no <code>@Transactional</code> or TransactionTemplate anywhere in src</li>
 <li>Worksheet: reach <code>POST /v1/providers</code> with a failure between the statements (connection drop, pod kill) · residue external (a provider with no admin, unmanageable; a retry creates a second provider) · signal caller (500) → major</li>
 <li>Breaks the house rule "every multi-statement write is one function, one transaction" (data-design.md:424).</li>
-<li>Cross-ref: PAT, <a class="xref" href="#SEC-002">SEC-002</a>.</li></ul>
+<li>Cross-ref: PAT, <a class="xref" href="#SEC-002">SEC-002</a>; <a class="xref" href="#CON-005">CON-005</a> (same code, <code>core/management/ProviderSetup.kt:62</code>).</li></ul>
 <h4 class="finding" id="ERR-004">ERR-004 · m · isolated — Gate consumer commits the inbox dedupe claim before the effect (latent)</h4>
 <ul><li><code>core/gate/GateResolutionService.kt:34-41, 80-83</code>; <code>repo/JdbcWorkerRepositories.kt:101-124</code>; contradicts the inbox_message comment at <code>ddl/01:~480</code> ("same transaction as the effect").</li>
 <li>A redelivery after a failure is answered DUPLICATE, so the resolution is lost.</li>
 <li>Latent: no producer exists (not exercised). If the edge becomes live, this is external + none → C.</li>
-<li>Cross-ref: PAT, CON.</li></ul>
+<li>Cross-ref: PAT, CON; <a class="xref" href="#CON-005">CON-005</a> (same code, <code>core/gate/GateResolutionService.kt:81</code>).</li></ul>
 <h4 class="finding" id="ERR-005">ERR-005 · m · isolated — Malformed gate resolution is retried, then skipped, with no dead-letter (owner declined hazard, domain-context §7)</h4>
 <ul><li><code>worker/GateResolutionListener.kt:20-23</code> (the comment promises dead-lettering), <code>:46-68</code>; no CommonErrorHandler or DeadLetterPublishingRecoverer bean exists. Latent (no producer); external + none → C once live.</li></ul>
 <h4 class="finding" id="ERR-006">ERR-006 · m · isolated — A resolution for an unknown booking is answered with silence (latent; owner unknown §8)</h4>
@@ -353,7 +357,7 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <ul><li>Status: open, found @66308b9</li>
 <li><code>sys/SecurityConfig.kt:37-38</code>; <code>api/ApiExceptionHandler.kt</code> never sees a filter-chain denial.</li>
 <li>A caller with a valid token but the wrong scope gets no <code>{code, rule, message}</code> body. <code>SecurityConfigTest</code> asserts the status only.</li>
-<li>Cross-ref: <a class="xref" href="#CMP-004">CMP-004</a>.</li></ul>
+<li>Cross-ref: <a class="xref" href="#CMP-004">CMP-004</a>; <a class="xref" href="#SEC-009">SEC-009</a> (same code, <code>sys/SecurityConfig.kt:37</code>); <a class="xref" href="#LGG-006">LGG-006</a> (same code, <code>sys/SecurityConfig.kt:37</code>); <a class="xref" href="#RDB-004">RDB-004</a> (same code, <code>sys/SecurityConfig.kt:37</code>).</li></ul>
 <hr class="aspect-rule">
 <h4 id="aspect-SEC">Security (SEC) — 4/10 · 7 open</h4>
 <h4 class="finding" id="SEC-003">SEC-003 · M · widespread — Raw PostgreSQL error text, with PL/pgSQL frames and internal ids, returned to clients</h4>
@@ -368,7 +372,8 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <h4 class="finding" id="SEC-005">SEC-005 · M · isolated — Any token from the issuer is accepted; no audience restriction</h4>
 <ul><li><code>application.yaml:22-25</code>; <code>sys/SecurityConfig.kt:29</code>. Verified in bytecode: Boot 4.1.1 adds an audience validator only when <code>jwt.audiences</code> is set. A token minted for another relying party of the same IdP is accepted. Weakened defense → major.</li></ul>
 <h4 class="finding" id="SEC-006">SEC-006 · m · isolated — Actuator metrics and prometheus endpoints are unauthenticated</h4>
-<ul><li><code>application.yaml:58-62</code>; <code>SecurityConfig.kt:26</code> (<code>/actuator/**</code> permitAll).</li></ul>
+<ul><li><code>application.yaml:58-62</code>; <code>SecurityConfig.kt:26</code> (<code>/actuator/**</code> permitAll).</li>
+<li>Cross-ref: <a class="xref" href="#REQ-002">REQ-002</a> (same code, <code>application.yaml:58</code>); <a class="xref" href="#REQ-006">REQ-006</a> (same code, <code>sys/SecurityConfig.kt:26</code>).</li></ul>
 <h4 class="finding" id="SEC-007">SEC-007 · m · isolated — <code>linkedSubject</code> lets an admin bind or squat any IdP subject (latent; idp_subject read by nothing)</h4>
 <ul><li><code>ProviderSetupController.kt:57</code>; <code>sql/management/insert_resource.sql:3</code>; UNIQUE conflict → 500 discloses an existing link.</li></ul>
 <h4 class="finding" id="SEC-008">SEC-008 · m · isolated — Gate consumer resolves AWAITING_PROVIDER_APPROVAL as PROVIDER from any topic message (latent)</h4>
@@ -378,7 +383,7 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <ul><li>Status: open, found @66308b9</li>
 <li><code>sys/SecurityConfig.kt:37-38, 44-45</code>; comments that state it as fact: <code>api/InternalController.kt:13-15</code>, <code>core/listing/ListingService.kt:42-43</code>, <code>sys/SecurityConfig.kt:19-20</code></li>
 <li>The gate reads the default <code>scope</code>/<code>scp</code> authorities. "Never an end-user token" holds only if the issuer never grants <code>booking.contacts.read</code> or <code>booking.providers.create</code> to end users. PD1 (claim mapping) is still open. Latent: there is no deployment.</li>
-<li>Cross-ref: <a class="xref" href="#REQ-017">REQ-017</a>, PD1.</li></ul>
+<li>Cross-ref: <a class="xref" href="#REQ-017">REQ-017</a>, PD1; <a class="xref" href="#ERR-008">ERR-008</a> (same code, <code>sys/SecurityConfig.kt:37</code>); <a class="xref" href="#CMP-004">CMP-004</a> (same code, <code>sys/SecurityConfig.kt:37</code>); <a class="xref" href="#LGG-006">LGG-006</a> (same code, <code>sys/SecurityConfig.kt:37</code>); <a class="xref" href="#RDB-004">RDB-004</a> (same code, <code>sys/SecurityConfig.kt:37</code>).</li></ul>
 <hr class="aspect-rule">
 <h4 id="aspect-PAT">Code pattern (PAT) — 6/10 · 5 open</h4>
 <h4 class="finding" id="PAT-001">PAT-001 · M · isolated — Worker pods serve the whole HTTP API: only worker beans are profile-gated</h4>
@@ -387,7 +392,8 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <li>Cross-ref: <a class="xref" href="#SEC-001">SEC-001</a>.</li></ul>
 <h4 class="finding" id="PAT-002">PAT-002 · m · isolated — Repo adapter re-implements the reschedule state decision</h4>
 <ul><li><code>repo/JdbcBookingLifecycle.kt:82-83</code> duplicates <code>ddl/03-functions.sql:603-606</code>; <code>fn_reschedule_booking</code> returns no state.</li>
-<li>Wider @eef5ebc: the SQL now has a third branch (HELD stays HELD whatever the gate, <code>ddl/03-functions.sql:619-628</code>), and the Kotlin still infers the state from the gate (<code>JdbcBookingLifecycle.kt:82-83</code>). They diverge only if a provider's confirmation mode changes while it has a HELD booking, and no API changes the mode. The <code>COMMENT ON FUNCTION</code> at <code>ddl/03:660</code> is now stale.</li></ul>
+<li>Wider @eef5ebc: the SQL now has a third branch (HELD stays HELD whatever the gate, <code>ddl/03-functions.sql:619-628</code>), and the Kotlin still infers the state from the gate (<code>JdbcBookingLifecycle.kt:82-83</code>). They diverge only if a provider's confirmation mode changes while it has a HELD booking, and no API changes the mode. The <code>COMMENT ON FUNCTION</code> at <code>ddl/03:660</code> is now stale.</li>
+<li>Cross-ref: <a class="xref" href="#RDB-001">RDB-001</a> (same code, <code>ddl/03-functions.sql:604</code>).</li></ul>
 <h4 class="finding" id="PAT-004">PAT-004 · m · isolated — Logging inside core</h4>
 <ul><li><code>core/outbox/OutboxRelay.kt:4, 21, 45-48</code>, against <code>BookingOutcomeResponder.kt:15-16</code> ("Business code does not log").</li></ul>
 <h4 class="finding" id="PAT-005">PAT-005 · m · widespread — core/ ↔ sys/ package cycle via <code>IdGenerator</code></h4>
@@ -399,22 +405,24 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <h4 class="finding" id="CON-002">CON-002 · M · isolated — Concurrent creates of the same new group session fail with BK001 or deadlock instead of joining</h4>
 <ul><li><code>ddl/03-functions.sql:336-351</code> (ON CONFLICT arbitrates only <code>session_identity</code>; the non-arbiter <code>session_no_overlap</code> makes the second racer wait and then fail), <code>:348-350</code>; same shape at <code>:582-598</code>; <code>ddl/01-create-tables.sql:300-302</code></li>
 <li>Worksheet: reach two customers booking the same not-yet-existing slot of a capacity&gt;1 service · residue request (409 or 500; rolled back) · signal caller → major</li>
-<li>Evidence (verifier probe): 300 new capacity-3 slots, 3 racers each → 828 confirmed, 29 BK001, 43 40P01. I1 and I2 still hold.</li></ul>
+<li>Evidence (verifier probe): 300 new capacity-3 slots, 3 racers each → 828 confirmed, 29 BK001, 43 40P01. I1 and I2 still hold.</li>
+<li>Cross-ref: <a class="xref" href="#TSQ-004">TSQ-004</a> (same code, <code>ddl/03-functions.sql:348</code>).</li></ul>
 <h4 class="finding" id="CON-003">CON-003 · M · isolated — Reschedule locks two sessions in request order; crossing moves deadlock</h4>
 <ul><li><code>ddl/03-functions.sql:579-580</code> then <code>:583-594</code>; versus the expiry batch at <code>:644-653</code> / <code>:489-491</code></li>
 <li>Worksheet: reach two crosswise reschedules, or a reschedule against a sweep · residue request (40P01 → 500; a lost sweep batch delays expiry by at least 30 s) · signal caller → major</li>
-<li>Evidence: the probes reproduced 40P01 (8/311 and 1/600).</li></ul>
+<li>Evidence: the probes reproduced 40P01 (8/311 and 1/600).</li>
+<li>Cross-ref: <a class="xref" href="#TSQ-003">TSQ-003</a> (same code, <code>ddl/03-functions.sql:489</code>); <a class="xref" href="#TSQ-004">TSQ-004</a> (same code, <code>ddl/03-functions.sql:589</code>); <a class="xref" href="#RDB-001">RDB-001</a> (same code, <code>ddl/03-functions.sql:650</code>); <a class="xref" href="#RDB-005">RDB-005</a> (same code, <code>ddl/03-functions.sql:579</code>); <a class="xref" href="#REQ-018">REQ-018</a> (same code, <code>ddl/03-functions.sql:579</code>).</li></ul>
 <h4 class="finding" id="CON-004">CON-004 · M · isolated — Two concurrent creates with the same Idempotency-Key: the second gets 409 or 500, not the replay</h4>
 <ul><li><code>ddl/03-functions.sql:315-325</code> (unlocked replay read), <code>:342-345</code>, <code>:371-377</code>; <code>booking_idempotency_key_uq</code> in <code>ddl/02-create-indexes.sql:5-7</code></li>
 <li>Worksheet: reach a client double-submit or retry while the first create is uncommitted · residue request · signal caller (wrong: BK002 "at capacity" for capacity 1; 23505 → 500 for capacity &gt; 1) → major</li>
 <li>Evidence: deterministic probe; R15 requires the replay.</li>
-<li>Cross-ref: ERR.</li></ul>
+<li>Cross-ref: ERR; <a class="xref" href="#LOG-011">LOG-011</a> (same code, <code>ddl/03-functions.sql:315</code>); <a class="xref" href="#TSQ-004">TSQ-004</a> (same code, <code>ddl/03-functions.sql:342</code>).</li></ul>
 <h4 class="finding" id="CON-005">CON-005 · M · widespread — One non-thread-safe RandomGenerator shared by the UUIDv7 generator across virtual threads</h4>
 <ul><li><code>sys/TimeAndIdConfig.kt:21</code>; <code>sys/IdGenerator.kt:26-33</code> (no synchronization). Callers:</li></ul>
 <p>- <code>CorrelationIdFilter.kt:30</code> (every request) - <code>BookingService.kt:60-61</code> - <code>BookingLifecycleService.kt:85,105</code> - <code>JdbcCustomerDirectory.kt:47</code> - <code>ProviderSetup.kt:62+</code> - <code>GateResolutionService.kt:66,81</code></p>
 <ul><li>Worksheet: reach concurrent requests on one replica in the same millisecond · residue request (duplicate public_ref or event_id → 23505 → 500; merged correlation ids) · signal caller → major; widespread: every id minted by both workloads.</li>
 <li>Evidence: probes found 2.7M duplicate draw pairs in 12.8M with 64 virtual threads, and duplicates even with 2 threads.</li>
-<li>Cross-ref: <a class="xref" href="#SEC-004">SEC-004</a>.</li></ul>
+<li>Cross-ref: <a class="xref" href="#SEC-004">SEC-004</a>; <a class="xref" href="#ERR-003">ERR-003</a> (same code, <code>core/management/ProviderSetup.kt:62</code>); <a class="xref" href="#ERR-004">ERR-004</a> (same code, <code>core/gate/GateResolutionService.kt:81</code>).</li></ul>
 <h4 class="finding" id="CON-006">CON-006 · M · isolated — "No preference" resource selection is check-then-act and deterministic, so concurrent requests collide while another resource is free</h4>
 <ul><li><code>core/booking/BookingService.kt:85-93</code>; <code>sql/availability/select_resource.sql:27-35</code></li>
 <li>Worksheet: reach two concurrent no-preference creates for the same start of a capacity-1 service with ≥2 eligible resources · residue request (BK002 409; never re-selected) · signal caller → major</li>
@@ -439,22 +447,25 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <h4 class="finding" id="CMP-004">CMP-004 · m · isolated — Two routes narrowed to scoped tokens with no contract note</h4>
 <ul><li>Status: open, found @66308b9</li>
 <li><code>sys/SecurityConfig.kt:37-38</code>: <code>GET /internal/**</code> and <code>POST /v1/providers</code> now answer 403 without the scope. There is no consumer, so nothing breaks; AQ8 defers the published contract.</li>
-<li>Cross-ref: <a class="xref" href="#ERR-008">ERR-008</a>.</li></ul>
+<li>Cross-ref: <a class="xref" href="#ERR-008">ERR-008</a>; <a class="xref" href="#SEC-009">SEC-009</a> (same code, <code>sys/SecurityConfig.kt:37</code>); <a class="xref" href="#LGG-006">LGG-006</a> (same code, <code>sys/SecurityConfig.kt:37</code>); <a class="xref" href="#RDB-004">RDB-004</a> (same code, <code>sys/SecurityConfig.kt:37</code>).</li></ul>
 <hr class="aspect-rule">
 <h4 id="aspect-LGG">Logging (LGG) — 9/10 · 6 open</h4>
 <h4 class="finding" id="LGG-001">LGG-001 · m · isolated — Relay failure line loses its cause and blames the broker for DB errors</h4>
 <ul><li><code>core/outbox/OutboxRelay.kt:33-48</code>: a TimeoutException renders <code>reason=null</code>, and the exception is not passed to the logger. A <code>markDispatched</code> DB failure is logged as "event dispatch failed".</li></ul>
 <h4 class="finding" id="LGG-002">LGG-002 · m · widespread — Rejection log lines carry no subject identifier</h4>
-<ul><li><code>api/BookingOutcomeResponder.kt:57, 71</code>; <code>AvailabilityAdminController.kt:114</code>; <code>ProviderSetupController.kt:107</code>; <code>ListingController.kt:49</code>.</li></ul>
+<ul><li><code>api/BookingOutcomeResponder.kt:57, 71</code>; <code>AvailabilityAdminController.kt:114</code>; <code>ProviderSetupController.kt:107</code>; <code>ListingController.kt:49</code>.</li>
+<li>Cross-ref: <a class="xref" href="#LOG-010">LOG-010</a> (same code, <code>api/ProviderSetupController.kt:107</code>).</li></ul>
 <h4 class="finding" id="LGG-003">LGG-003 · m · isolated — pgjdbc "Failing row contains (…)" row data reaches ERROR logs</h4>
-<ul><li><code>api/ApiExceptionHandler.kt:41</code> logs the full exception. Reachable today: free-text <code>availability_exception.reason</code>, provider name and timezone, and <code>Key (idp_subject)=(…)</code>. Customer PII is not reachable today (no CHECK or caller-trippable UNIQUE on customer). It becomes critical if one is added.</li></ul>
+<ul><li><code>api/ApiExceptionHandler.kt:41</code> logs the full exception. Reachable today: free-text <code>availability_exception.reason</code>, provider name and timezone, and <code>Key (idp_subject)=(…)</code>. Customer PII is not reachable today (no CHECK or caller-trippable UNIQUE on customer). It becomes critical if one is added.</li>
+<li>Cross-ref: <a class="xref" href="#ERR-002">ERR-002</a> (same code, <code>api/ApiExceptionHandler.kt:41</code>).</li></ul>
 <h4 class="finding" id="LGG-004">LGG-004 · m · isolated — Untrusted strings logged raw (log forging)</h4>
 <ul><li><code>api/BookingOutcomeResponder.kt:91</code> (<code>supplied=</code>); <code>worker/GateResolutionListener.kt:40-43</code> (latent).</li></ul>
 <h4 class="finding" id="LGG-005">LGG-005 · m · isolated — Worker log lines have no correlation id</h4>
 <ul><li><code>sys/CorrelationIdFilter.kt</code> is HTTP-only; pattern at <code>application.yaml:73</code>. Relay, sweep and gate lines print <code>[booking-service,]</code> (NF7).</li></ul>
 <h4 class="finding" id="LGG-006">LGG-006 · m · isolated — A refused contacts or onboarding call leaves no service log line</h4>
 <ul><li>Status: open, found @66308b9</li>
-<li><code>sys/SecurityConfig.kt:37-38</code>. No AccessDeniedHandler or authorization-event listener is configured; denials appear only at Spring Security DEBUG. No documented process reads such a line.</li></ul>
+<li><code>sys/SecurityConfig.kt:37-38</code>. No AccessDeniedHandler or authorization-event listener is configured; denials appear only at Spring Security DEBUG. No documented process reads such a line.</li>
+<li>Cross-ref: <a class="xref" href="#ERR-008">ERR-008</a> (same code, <code>sys/SecurityConfig.kt:37</code>); <a class="xref" href="#SEC-009">SEC-009</a> (same code, <code>sys/SecurityConfig.kt:37</code>); <a class="xref" href="#CMP-004">CMP-004</a> (same code, <code>sys/SecurityConfig.kt:37</code>); <a class="xref" href="#RDB-004">RDB-004</a> (same code, <code>sys/SecurityConfig.kt:37</code>).</li></ul>
 <hr class="aspect-rule">
 <h4 id="aspect-TSQ">Test quality (TSQ) — 4/10 · 16 open</h4>
 <p>Every TSQ major below was confirmed by applying its named mutation to production code in a scratch clone and running <code>./gradlew test --offline</code>. "Green" means no failures beyond the 5 baseline failures.</p>
@@ -466,11 +477,14 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <ul><li>Narrowed @dc188b7: a new clock-independent test (a 2100 instant) covers <code>claim_due_events</code> and <code>record_failure</code> against the real database. <code>mark_dispatched</code> is still covered only by the red relay pair.</li>
 <li>Cross-ref: CON (app clock vs DB clock).</li></ul>
 <h4 class="finding" id="TSQ-003">TSQ-003 · M · isolated — Capacity release when a booking leaves HELD or CONFIRMED is untested</h4>
-<ul><li><code>ddl/03-functions.sql:489-491</code>. Mutation: release → <code>PERFORM 1</code> → green (also with the clock fixed). Worksheet: reach every cancel, decline, expiry and no-show · residue external (permanent capacity leak) · signal none → major.</li></ul>
+<ul><li><code>ddl/03-functions.sql:489-491</code>. Mutation: release → <code>PERFORM 1</code> → green (also with the clock fixed). Worksheet: reach every cancel, decline, expiry and no-show · residue external (permanent capacity leak) · signal none → major.</li>
+<li>Cross-ref: <a class="xref" href="#CON-003">CON-003</a> (same code, <code>ddl/03-functions.sql:489</code>).</li></ul>
 <h4 class="finding" id="TSQ-004">TSQ-004 · M · isolated — Session capacity guard (I2, NF4) untested, sequentially and concurrently</h4>
-<ul><li><code>ddl/03-functions.sql:342-353, 589-601, 492-497</code>; every fixture uses capacity 1. Mutation: drop <code>WHERE session.booked_count &lt; session.capacity</code> (<code>:345</code>) → green. Worksheet: reach a second booking of a full session · residue external (overbooked) · signal none → major. README "Known gaps" records the missing NF4 test without accepting the consequence.</li></ul>
+<ul><li><code>ddl/03-functions.sql:342-353, 589-601, 492-497</code>; every fixture uses capacity 1. Mutation: drop <code>WHERE session.booked_count &lt; session.capacity</code> (<code>:345</code>) → green. Worksheet: reach a second booking of a full session · residue external (overbooked) · signal none → major. README "Known gaps" records the missing NF4 test without accepting the consequence.</li>
+<li>Cross-ref: <a class="xref" href="#CON-002">CON-002</a> (same code, <code>ddl/03-functions.sql:348</code>); <a class="xref" href="#CON-003">CON-003</a> (same code, <code>ddl/03-functions.sql:589</code>); <a class="xref" href="#CON-004">CON-004</a> (same code, <code>ddl/03-functions.sql:342</code>); <a class="xref" href="#TSQ-016">TSQ-016</a> (same code, <code>ddl/03-functions.sql:597</code>); <a class="xref" href="#RDB-009">RDB-009</a> (same code, <code>ddl/03-functions.sql:597</code>).</li></ul>
 <h4 class="finding" id="TSQ-005">TSQ-005 · M · isolated — The cancel path, including R6 and R27, has no test</h4>
-<ul><li><code>ddl/03-functions.sql:468-481</code>; <code>BookingLifecycleService.kt:51-56</code> is never called by a test. Mutation: R6 check → <code>IF false</code> (<code>:476</code>) → green. Worksheet: reach a customer cancelling inside the window · residue external · signal none → major.</li></ul>
+<ul><li><code>ddl/03-functions.sql:468-481</code>; <code>BookingLifecycleService.kt:51-56</code> is never called by a test. Mutation: R6 check → <code>IF false</code> (<code>:476</code>) → green. Worksheet: reach a customer cancelling inside the window · residue external · signal none → major.</li>
+<li>Cross-ref: <a class="xref" href="#LOG-008">LOG-008</a> (same code, <code>ddl/03-functions.sql:473</code>); <a class="xref" href="#RDB-001">RDB-001</a> (same code, <code>ddl/03-functions.sql:473</code>); <a class="xref" href="#RDB-005">RDB-005</a> (same code, <code>ddl/03-functions.sql:469</code>); <a class="xref" href="#REQ-001">REQ-001</a> (same code, <code>ddl/03-functions.sql:468</code>).</li></ul>
 <h4 class="finding" id="TSQ-006">TSQ-006 · M · isolated — Reschedule (UC8) tests leave capacity release, R6 actor scoping and the deadline clamp unpinned</h4>
 <ul><li><code>ddl/03-functions.sql:535-660</code>; tests at <code>repo/BookingLifecycleIT.kt</code> (four reschedule tests since eef5ebc)</li>
 <li>Worksheet: reach any reschedule · residue external (capacity leak or double hold; provider moves refused; a hold outliving its start) · signal none → major</li>
@@ -480,7 +494,8 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <li>Narrowed @eef5ebc: R27, the customer window, the kept deadline and the named resource are now pinned.</li>
 <li>Cross-ref: <a class="xref" href="#LOG-001">LOG-001</a>, <a class="xref" href="#LOG-002">LOG-002</a> (resolved).</li></ul>
 <h4 class="finding" id="TSQ-007">TSQ-007 · M · isolated — Tenancy filters in the listing SQL are untested</h4>
-<ul><li><code>sql/listing/customer_bookings.sql:19</code>, <code>provider_bookings.sql:18</code>, <code>booking_contacts.sql:12</code>; ListingServiceTest stubs the repository. Mutation: <code>WHERE b.customer_id = :customerId</code> → <code>WHERE :customerId IS NOT NULL</code> → green. Worksheet: reach any customer listing · residue external (cross-customer disclosure) · signal none → major.</li></ul>
+<ul><li><code>sql/listing/customer_bookings.sql:19</code>, <code>provider_bookings.sql:18</code>, <code>booking_contacts.sql:12</code>; ListingServiceTest stubs the repository. Mutation: <code>WHERE b.customer_id = :customerId</code> → <code>WHERE :customerId IS NOT NULL</code> → green. Worksheet: reach any customer listing · residue external (cross-customer disclosure) · signal none → major.</li>
+<li>Cross-ref: <a class="xref" href="#REQ-008">REQ-008</a> (same code, <code>sql/listing/provider_bookings.sql:18</code>).</li></ul>
 <h4 class="finding" id="TSQ-008">TSQ-008 · M · isolated — Rule expansion in the provider timezone (R14, DST) has no test</h4>
 <ul><li><code>ddl/03-functions.sql:46-62</code>; every fixture uses <code>'UTC'</code> (<code>BookingLifecycleIT.kt:78</code>, <code>JdbcBookingRepositoryIT.kt:68</code>, <code>ProviderOnboardingIT.kt:86</code>, <code>AvailabilityManagementIT.kt:70</code>). Mutation: <code>AT TIME ZONE v_tz</code> → <code>'UTC'</code> → green. Worksheet: reach every non-UTC provider · residue external · signal none → major. The README known gap records the missing test and does not credit it.</li></ul>
 <h4 class="finding" id="TSQ-009">TSQ-009 · M · isolated — The wiring tier (ApplicationContextIT) always fails on the default Testcontainers path</h4>
@@ -508,7 +523,7 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <li><code>ddl/03-functions.sql:597-598</code> (reschedule <code>FOR SHARE</code>); <code>sql/management/end_availability_rule.sql:15</code> (<code>FOR UPDATE OF res</code>)</li>
 <li>Worksheet: reach a reschedule or a rule end racing the other side · residue external (a booking stored inside time that was already withdrawn, missing from the R20 list) · signal none → major</li>
 <li>Mutations, each run in a scratch copy: delete the reschedule lock → 86 tests, the 5 baseline failures only; delete the end-rule lock → the same. Both stay green.</li>
-<li>Cross-ref: <a class="xref" href="#CON-001">CON-001</a> (resolved).</li></ul>
+<li>Cross-ref: <a class="xref" href="#CON-001">CON-001</a> (resolved); <a class="xref" href="#TSQ-004">TSQ-004</a> (same code, <code>ddl/03-functions.sql:597</code>); <a class="xref" href="#RDB-009">RDB-009</a> (same code, <code>ddl/03-functions.sql:597</code>).</li></ul>
 <h4 class="finding" id="TSQ-017">TSQ-017 · m · isolated — The race tests prove "blocked" with a fixed sleep</h4>
 <ul><li>Status: open, found @862df06</li>
 <li><code>repo/AvailabilityManagementIT.kt:245-246</code>, <code>:285-286</code>: <code>Thread.sleep(500)</code> then <code>!isDone</code>. On a slow runner a removed lock could still pass. Polling <code>pg_stat_activity</code> for a lock wait would be deterministic.</li></ul>
@@ -523,18 +538,22 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <hr class="aspect-rule">
 <h4 id="aspect-RDB">Readability &amp; maintainability (RDB) — 9/10 · 9 open</h4>
 <h4 class="finding" id="RDB-001">RDB-001 · m · isolated — Hard-coded lookup ids in plpgsql</h4>
-<ul><li><code>ddl/03-functions.sql:67, 72, 261, 357, 360, 473, 502-504, 604, 606, 650, 676, 678</code>. Drift risk is settled by <code>04-seed-lookups.sql:1-2</code>; only readability remains.</li></ul>
+<ul><li><code>ddl/03-functions.sql:67, 72, 261, 357, 360, 473, 502-504, 604, 606, 650, 676, 678</code>. Drift risk is settled by <code>04-seed-lookups.sql:1-2</code>; only readability remains.</li>
+<li>Cross-ref: <a class="xref" href="#LOG-008">LOG-008</a> (same code, <code>ddl/03-functions.sql:473</code>); <a class="xref" href="#PAT-002">PAT-002</a> (same code, <code>ddl/03-functions.sql:604</code>); <a class="xref" href="#CON-003">CON-003</a> (same code, <code>ddl/03-functions.sql:650</code>); <a class="xref" href="#TSQ-005">TSQ-005</a> (same code, <code>ddl/03-functions.sql:473</code>); <a class="xref" href="#RDB-005">RDB-005</a> (same code, <code>ddl/03-functions.sql:473</code>); <a class="xref" href="#REQ-001">REQ-001</a> (same code, <code>ddl/03-functions.sql:473</code>); <a class="xref" href="#REQ-003">REQ-003</a> (same code, <code>ddl/03-functions.sql:676</code>).</li></ul>
 <h4 class="finding" id="RDB-002">RDB-002 · m · isolated — Take, deadline and event mapping duplicated between fn_create_booking and fn_reschedule_booking</h4>
 <ul><li><code>ddl/03-functions.sql:336-354</code> vs <code>:582-601</code>; <code>:363-368</code> vs <code>:607-611</code>; <code>:384, 389</code> vs <code>:519-526, 628</code>.</li>
-<li>Wider @862df06: the R20 resource lock and its comment are a third piece duplicated between create (<code>ddl/03-functions.sql:327-332</code>) and reschedule (<code>:597-598</code>).</li></ul>
+<li>Wider @862df06: the R20 resource lock and its comment are a third piece duplicated between create (<code>ddl/03-functions.sql:327-332</code>) and reschedule (<code>:597-598</code>).</li>
+<li>Cross-ref: <a class="xref" href="#REQ-003">REQ-003</a> (same code, <code>ddl/03-functions.sql:519</code>).</li></ul>
 <h4 class="finding" id="RDB-003">RDB-003 · m · isolated — Default values stated twice</h4>
 <ul><li>DDL defaults (<code>ddl/01:96-100, 161-164</code>) restated in <code>sql/management/insert_provider.sql:9-13</code> and <code>insert_service.sql:6-9</code>; <code>Page.first</code> (<code>core/listing/Listing.kt:43</code>) restated in <code>api/ListingController.kt:27-28, 41-42</code>.</li></ul>
 <h4 class="finding" id="RDB-004">RDB-004 · m · isolated — The <code>SCOPE_</code> authority prefix is restated in main and in the test</h4>
 <ul><li>Status: open, found @66308b9</li>
-<li><code>sys/SecurityConfig.kt:37-38</code>, <code>src/test/kotlin/dev/booking/sys/SecurityConfigTest.kt:57</code>: an unnamed convention written in two places.</li></ul>
+<li><code>sys/SecurityConfig.kt:37-38</code>, <code>src/test/kotlin/dev/booking/sys/SecurityConfigTest.kt:57</code>: an unnamed convention written in two places.</li>
+<li>Cross-ref: <a class="xref" href="#ERR-008">ERR-008</a> (same code, <code>sys/SecurityConfig.kt:37</code>); <a class="xref" href="#SEC-009">SEC-009</a> (same code, <code>sys/SecurityConfig.kt:37</code>); <a class="xref" href="#CMP-004">CMP-004</a> (same code, <code>sys/SecurityConfig.kt:37</code>); <a class="xref" href="#LGG-006">LGG-006</a> (same code, <code>sys/SecurityConfig.kt:37</code>).</li></ul>
 <h4 class="finding" id="RDB-005">RDB-005 · m · isolated — The R27 and R6 predicates are written twice</h4>
 <ul><li>Status: open, found @eef5ebc</li>
-<li><code>ddl/03-functions.sql:569-583</code> (reschedule) restates <code>:469-480</code> (cancel). A change to the window rule has to be made in both places.</li></ul>
+<li><code>ddl/03-functions.sql:569-583</code> (reschedule) restates <code>:469-480</code> (cancel). A change to the window rule has to be made in both places.</li>
+<li>Cross-ref: <a class="xref" href="#LOG-008">LOG-008</a> (same code, <code>ddl/03-functions.sql:473</code>); <a class="xref" href="#CON-003">CON-003</a> (same code, <code>ddl/03-functions.sql:579</code>); <a class="xref" href="#TSQ-005">TSQ-005</a> (same code, <code>ddl/03-functions.sql:469</code>); <a class="xref" href="#RDB-001">RDB-001</a> (same code, <code>ddl/03-functions.sql:473</code>); <a class="xref" href="#REQ-001">REQ-001</a> (same code, <code>ddl/03-functions.sql:469</code>); <a class="xref" href="#REQ-018">REQ-018</a> (same code, <code>ddl/03-functions.sql:571</code>).</li></ul>
 <h4 class="finding" id="RDB-006">RDB-006 · m · isolated — Second-resource test setup hard-codes the fixture date</h4>
 <ul><li>Status: open, found @eef5ebc</li>
 <li><code>repo/BookingLifecycleIT.kt</code>, the named-resource test, repeats <code>DATE '2026-09-02'</code> instead of deriving it from <code>slot</code>.</li></ul>
@@ -546,23 +565,25 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <li><code>application.yaml:33-36</code>: <code>max.block.ms</code> bounds only <code>send()</code>. <code>KafkaEventPublisher.kt:37-38</code> then waits up to 10 s more on <code>get()</code>, and <code>OutboxRelay</code> runs up to 100 sends in sequence, so a pass has no overall bound. The 10000 also restates <code>send-timeout-seconds</code> as a second literal.</li></ul>
 <h4 class="finding" id="RDB-009">RDB-009 · m · isolated — <code>fn_assert_bookable</code>'s lock precondition is stated only in its callers</h4>
 <ul><li>Status: open, found @862df06</li>
-<li><code>ddl/03-functions.sql:327-332</code>, <code>:597-598</code>. The function is STABLE and cannot lock, and its <code>COMMENT ON FUNCTION</code> does not say that callers must take the resource lock first.</li></ul>
+<li><code>ddl/03-functions.sql:327-332</code>, <code>:597-598</code>. The function is STABLE and cannot lock, and its <code>COMMENT ON FUNCTION</code> does not say that callers must take the resource lock first.</li>
+<li>Cross-ref: <a class="xref" href="#TSQ-004">TSQ-004</a> (same code, <code>ddl/03-functions.sql:597</code>); <a class="xref" href="#TSQ-016">TSQ-016</a> (same code, <code>ddl/03-functions.sql:597</code>).</li></ul>
 <hr class="aspect-rule">
 <h4 id="aspect-REQ">Requirements alignment (REQ) — 0/10 · 19 open</h4>
 <h4 class="finding" id="REQ-001">REQ-001 · C · isolated — Provider cancellation accepted without a reason (R7, UC7)</h4>
 <ul><li><code>api/BookingDtos.kt:35</code>; <code>api/BookingController.kt:69-76</code>; <code>core/booking/BookingLifecycleService.kt:51-56</code>; <code>ddl/03-functions.sql:468-481, 500-516</code>; the column comment at <code>ddl/01:397</code> claims "mandatory … (R7)" but nothing enforces it</li>
 <li>Worksheet: reach provider admin POSTing <code>/cancel</code> with no body · residue external (a CANCELLED booking with a NULL reason in append-only history) · signal none → critical</li>
-<li>Requirement: R7 "must supply a reason"; UC7 "The resulting record states who cancelled and why."</li></ul>
+<li>Requirement: R7 "must supply a reason"; UC7 "The resulting record states who cancelled and why."</li>
+<li>Cross-ref: <a class="xref" href="#LOG-008">LOG-008</a> (same code, <code>ddl/03-functions.sql:473</code>); <a class="xref" href="#TSQ-005">TSQ-005</a> (same code, <code>ddl/03-functions.sql:468</code>); <a class="xref" href="#RDB-001">RDB-001</a> (same code, <code>ddl/03-functions.sql:473</code>); <a class="xref" href="#RDB-005">RDB-005</a> (same code, <code>ddl/03-functions.sql:469</code>).</li></ul>
 <h4 class="finding" id="REQ-002">REQ-002 · C · widespread — Undispatched events are neither observable nor alertable (NF11)</h4>
 <ul><li><code>core/outbox/OutboxRelay.kt:33-48</code> (comment <code>:36-37</code> claims "attemptCount drives the NF11 alert"); <code>sql/outbox/record_failure.sql:1-2</code>; <code>application.yaml:58-62</code> exposes prometheus with no registry dependency in <code>build.gradle.kts:25-48</code>; there is no gauge or metric</li>
 <li>Worksheet: reach any broker outage or persistently failing event · residue external (lifecycle events withheld for an unbounded time; the booking's later events blocked) · signal none (no alerting, domain-context §7) → critical</li>
 <li>Requirement: NF11 "sustained lag or repeated dispatch failure raises an alert rather than accumulating silently". There is no known-gap marker; the code claims the alert exists.</li>
-<li>Cross-ref: ERR.</li></ul>
+<li>Cross-ref: ERR; <a class="xref" href="#SEC-006">SEC-006</a> (same code, <code>application.yaml:58</code>).</li></ul>
 <h4 class="finding" id="REQ-003">REQ-003 · C · isolated — BookingCompleted does not distinguish system auto-completion from a provider's mark (UC12)</h4>
 <ul><li><code>ddl/03-functions.sql:179-195</code> (payload has no completion source), <code>:519-526</code>, <code>:676-678</code></li>
 <li>Worksheet: reach every completion (an outbox row is written each time) · residue external (indistinguishable events) · signal none → critical</li>
 <li>Requirement: UC12 "The record and the event distinguish …". The record half is met; the event half is not.</li>
-<li>Cross-ref: CMP (draft topic).</li></ul>
+<li>Cross-ref: CMP (draft topic); <a class="xref" href="#RDB-001">RDB-001</a> (same code, <code>ddl/03-functions.sql:676</code>); <a class="xref" href="#RDB-002">RDB-002</a> (same code, <code>ddl/03-functions.sql:519</code>).</li></ul>
 <h4 class="finding" id="REQ-004">REQ-004 · C · isolated — No erasure, export or retention for customer data (NF5)</h4>
 <ul><li><code>customer.erased_at</code> (<code>ddl/01-create-tables.sql:206</code>) is read (<code>booking_contacts.sql:8</code>) but never written. There is no export or erasure endpoint and no retention job.</li>
 <li>Worksheet: reach any erasure or export request, and every customer 24 months after their last booking · residue external (PII kept and cannot be erased) · signal none → critical</li>
@@ -572,11 +593,12 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <ul><li><code>api/BookingDtos.kt:48-57</code>; <code>api/AvailabilityController.kt:37-45</code>. Worksheet: reach every search · residue request · signal none → major.</li></ul>
 <h4 class="finding" id="REQ-006">REQ-006 · M · isolated — Availability search requires a token; the requirements make it public (UC4, §3)</h4>
 <ul><li><code>sys/SecurityConfig.kt:26-27</code>; <code>api/AvailabilityController.kt:23</code>. Worksheet: reach any anonymous browser · residue request (401) · signal caller → major. No ruling marks the deviation as known.</li>
-<li>Cross-ref: SEC.</li></ul>
+<li>Cross-ref: SEC; <a class="xref" href="#SEC-006">SEC-006</a> (same code, <code>sys/SecurityConfig.kt:26</code>).</li></ul>
 <h4 class="finding" id="REQ-007">REQ-007 · M · isolated — A "no preference" booking of an unavailable time is rejected as R19 with 404 (UC5, NF8)</h4>
 <ul><li><code>core/booking/BookingService.kt:43-47</code>; <code>core/booking/BookingDomain.kt:55</code>; <code>api/BookingOutcomeResponder.kt:122</code>. Worksheet: reach a no-preference create at a full or unpublished time · residue request · signal caller (wrong rule) → major.</li></ul>
 <h4 class="finding" id="REQ-008">REQ-008 · M · isolated — Provider calendar cannot be filtered by resource or state (UC10)</h4>
-<ul><li><code>api/ListingController.kt:36-43</code>; <code>core/listing/ListingService.kt:29-39</code>; <code>sql/listing/provider_bookings.sql:18-20</code>. Worksheet: request · none → major.</li></ul>
+<ul><li><code>api/ListingController.kt:36-43</code>; <code>core/listing/ListingService.kt:29-39</code>; <code>sql/listing/provider_bookings.sql:18-20</code>. Worksheet: request · none → major.</li>
+<li>Cross-ref: <a class="xref" href="#TSQ-007">TSQ-007</a> (same code, <code>sql/listing/provider_bookings.sql:18</code>).</li></ul>
 <h4 class="finding" id="REQ-009">REQ-009 · M · isolated — No transition history is exposed anywhere (UC10)</h4>
 <ul><li><code>api/BookingDtos.kt:72-82</code>; no single-booking read; <code>booking_transition</code> is never read. Worksheet: request · none → major.</li></ul>
 <h4 class="finding" id="REQ-010">REQ-010 · M · isolated — A resource-linked subject gets no read access (R24, UC10)</h4>
@@ -592,7 +614,8 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <h4 class="finding" id="REQ-015">REQ-015 · m · isolated — Idempotency-Key is optional</h4>
 <ul><li><code>api/BookingController.kt:37</code> (<code>required = false</code>); architecture-design.md:243 says it is required.</li></ul>
 <h4 class="finding" id="REQ-016">REQ-016 · m · isolated — Unrequested <code>slotStepMinutes</code> (default 15) shapes offered starts</h4>
-<ul><li><code>api/BookingDtos.kt:150</code>; <code>sql/management/insert_service.sql:9</code>; <code>ddl/03-functions.sql:128</code>.</li></ul>
+<ul><li><code>api/BookingDtos.kt:150</code>; <code>sql/management/insert_service.sql:9</code>; <code>ddl/03-functions.sql:128</code>.</li>
+<li>Cross-ref: <a class="xref" href="#LOG-007">LOG-007</a> (same code, <code>ddl/03-functions.sql:128</code>).</li></ul>
 <h4 class="finding" id="REQ-017">REQ-017 · m · isolated — The design documents and comments still describe the old access rules, and the scope names appear nowhere else</h4>
 <ul><li>Status: open, found @66308b9</li>
 <li><code>core/management/ProviderSetup.kt:46-52</code> (the creating subject becomes the first admin; nothing says a scope is required); domain-context §6 I5 and §7 hazards ("not enforced", "no authorization check"); <code>docs/backend-design/architecture-design.md:256</code> (service-to-service auth).</li>
@@ -601,7 +624,7 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <h4 class="finding" id="REQ-018">REQ-018 · m · isolated — The reschedule window rule exists only in a SQL comment</h4>
 <ul><li>Status: open, found @eef5ebc</li>
 <li><code>ddl/03-functions.sql:571-583</code>: a customer may not reschedule a CONFIRMED booking inside the R6 window. UC8 and requirements §4.1 do not state it.</li>
-<li>Cross-ref: <a class="xref" href="#LOG-008">LOG-008</a>.</li></ul>
+<li>Cross-ref: <a class="xref" href="#LOG-008">LOG-008</a>; <a class="xref" href="#CON-003">CON-003</a> (same code, <code>ddl/03-functions.sql:579</code>); <a class="xref" href="#RDB-005">RDB-005</a> (same code, <code>ddl/03-functions.sql:571</code>).</li></ul>
 <h4 class="finding" id="REQ-019">REQ-019 · m · isolated — The data design still says availability edits take no lock</h4>
 <ul><li>Status: open, found @862df06</li>
 <li><code>docs/backend-design/data-design.md:441</code> says UC2 and UC3 are "Plain DML, single statement, no locking". The R20 lock protocol added at 862df06 is documented only in SQL comments.</li></ul>
@@ -639,7 +662,7 @@ footer.gen { color:var(--ink-muted); font-size:12.5px; margin:28px 0 8px; border
 <p>Per-aspect baselines (diff basis for the next incremental review): LOG, ERR, SEC, PAT, CON, CMP, LGG, TSQ, TYP, RDB, REQ @ 862df06, whole repo.</p>
 </section>
 
-<footer class="gen">Generated from <code>review.md</code> on 2026-10-17 — do not edit this page; regenerate with the <em>reviewing-code-by-aspect</em> skill's <code>scripts/render_review.mjs</code> instead. Agents must consume the markdown ledger, not this page. Fully self-contained; no external dependencies.</footer>
+<footer class="gen">Generated from <code>review.md</code> on 2026-10-20 — do not edit this page; regenerate with the <em>reviewing-code-by-aspect</em> skill's <code>scripts/render_review.mjs</code> instead. Agents must consume the markdown ledger, not this page. Fully self-contained; no external dependencies.</footer>
 </main>
 </div>
 <div id="tooltip"></div>

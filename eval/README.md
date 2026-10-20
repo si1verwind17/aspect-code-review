@@ -70,12 +70,12 @@ squashed into this repository's first commit; they do not resolve here.
 
 | Scenario | Skill@ | Model | Reps | Result | Notes |
 |---|---|---|---|---|---|
-| 1 | draft | Sonnet | 3 | 52/57 | all inline. Residual: no rep's written execution-mode offer names the cost trade-off (check 13, 0/3); one rep skipped the scope question (check 12); one rep dropped the `---` rules between aspect sections (check 14) |
-| 2 | draft | Sonnet | 3 | 41/42 | check 13 N/A in every rep (all inline); one rep's fresh-eyes advisory named neither the cost nor a cheaper option (check 9) |
+| 1 | 2661bda | Sonnet | 3 | 52/57 | all inline. Residual: no rep's written execution-mode offer names the cost trade-off (check 13, 0/3); one rep skipped the scope question (check 12); one rep dropped the `---` rules between aspect sections (check 14) |
+| 2 | 2661bda | Sonnet | 3 | 41/42 | check 13 N/A in every rep (all inline); one rep's fresh-eyes advisory named neither the cost nor a cheaper option (check 9) |
 | 3 | 72be6d1 | Sonnet | 3 | 24/24 | every rep ran the skill's script; at the older History row the page shows that review's own changes, not the latest open list |
 | 4 | 4199e31 | Sonnet | 3 | 24/24 | the suite cannot run on the host; Q4 lands as an unrun-mutation candidate, as checks 3–4 allow |
 | 5 | f34e692 | Sonnet | 3 | 3/3 | only `reviewing-code-by-aspect` loaded |
-| 6 | draft | Sonnet | 3 | 15/15 | control 12/15: links 0/3. Every rep ran `link_findings.mjs` |
+| 6 | 2661bda | Sonnet | 3 | 15/15 | control 12/15: links 0/3. Every rep ran `link_findings.mjs` |
 
 ### documenting-domain-context
 
@@ -89,4 +89,4 @@ squashed into this repository's first commit; they do not resolve here.
 
 | Scenario | Skill@ | Model | Reps | Result | Notes |
 |---|---|---|---|---|---|
-| 1 | draft | Sonnet | 3 | 18/18 | control 3/18 (scope passes unaided; linked finding, branch, commit, clean review, hand-back 0/3). Every reviewer was briefed by hash; the branch name still shows the IDs to a reviewer who lists branches |
+| 1 | 2661bda | Sonnet | 3 | 18/18 | control 3/18 (scope passes unaided; linked finding, branch, commit, clean review, hand-back 0/3). Every reviewer was briefed by hash; the branch name still shows the IDs to a reviewer who lists branches |
